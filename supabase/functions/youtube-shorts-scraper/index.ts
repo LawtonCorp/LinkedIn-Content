@@ -1,0 +1,109 @@
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const { keywords, maxResults = 5 } = await req.json()
+    const APIFY_TOKEN = Deno.env.get('APIFY_API_TOKEN')
+
+    if (!APIFY_TOKEN) {
+      throw new Error("Missing APIFY_API_TOKEN")
+    }
+
+    // Step 1: Search for YouTube Shorts URLs using a search actor
+    // We'll use apify/youtube-scraper to find the URLs first
+    const searchActorId = "apify/youtube-scraper"
+    const searchInput = {
+      searchKeywords: keywords.map(kw => `"${kw}" shorts`).join(' '),
+      maxResults: maxResults,
+      searchSort: "relevance",
+    }
+
+    console.log("Searching for Shorts URLs with keywords:", keywords)
+
+    const searchRunResponse = await fetch(`https://api.apify.com/v2/acts/${searchActorId}/runs?token=${APIFY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(searchInput),
+    })
+
+    if (!searchRunResponse.ok) {
+      throw new Error(`Search Actor failed: ${await searchRunResponse.text()}`)
+    }
+
+    const searchRunData = await searchRunResponse.json()
+    const searchRunId = searchRunData.data.id
+
+    // Wait for search to complete (simplified polling)
+    let searchStatus = "RUNNING"
+    while (searchStatus === "RUNNING") {
+      await new Promise(r => setTimeout(r, 2000))
+      const res = await fetch(`https://api.apify.com/v2/actor-runs/${searchRunId}?token=${APIFY_TOKEN}`)
+      const data = await res.json()
+      searchStatus = data.data.status
+    }
+
+    // Get search results (URLs)
+    const searchDatasetRes = await fetch(`https://api.apify.com/v2/actor-runs/${searchRunId}/dataset/items?token=${APIFY_TOKEN}`)
+    const searchItems = await searchDatasetRes.json()
+    const shortsUrls = searchItems
+      .map(item => item.url)
+      .filter(url => url && url.includes('shorts/'))
+
+    if (shortsUrls.length === 0) {
+      return new Response(JSON.stringify([]), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // Step 2: Extract transcripts using the user-requested actor
+    const transcriptActorId = "scrapestorm/youtube-transcript-short-scraper-fast-cheap"
+    const transcriptInput = {
+      urls: shortsUrls,
+    }
+
+    console.log("Extracting transcripts for URLs:", shortsUrls)
+
+    const transcriptRunResponse = await fetch(`https://api.apify.com/v2/acts/${transcriptActorId}/runs?token=${APIFY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(transcriptInput),
+    })
+
+    if (!transcriptRunResponse.ok) {
+      throw new Error(`Transcript Actor failed: ${await transcriptRunResponse.text()}`)
+    }
+
+    const transcriptRunData = await transcriptRunResponse.json()
+    const transcriptRunId = transcriptRunData.data.id
+
+    // Wait for transcript extraction to complete
+    let transcriptStatus = "RUNNING"
+    while (transcriptStatus === "RUNNING") {
+      await new Promise(r => setTimeout(r, 2000))
+      const res = await fetch(`https://api.apify.com/v2/actor-runs/${transcriptRunId}?token=${APIFY_TOKEN}`)
+      const data = await res.json()
+      transcriptStatus = data.data.status
+    }
+
+    // Get final results
+    const finalDatasetRes = await fetch(`https://api.apify.com/v2/actor-runs/${transcriptRunId}/dataset/items?token=${APIFY_TOKEN}`)
+    const finalResults = await finalDatasetRes.json()
+
+    return new Response(JSON.stringify(finalResults), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400,
+    })
+  }
+})

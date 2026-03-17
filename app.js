@@ -213,48 +213,94 @@ const renderTrends = (trends) => {
 
 elements.btnRunTrends.addEventListener('click', async () => {
     const topics = getLinkedInTopics();
-    showLoader(`Scraping Reddit for "${topics.join(', ')}" using Apify...`);
+    showLoader(`Deep scraping Reddit, LinkedIn, X, and YouTube Shorts for "${topics.join(', ')}"...`);
 
     try {
         if (!supabase) throw new Error("Supabase client not initialized.");
 
-        const { data, error } = await supabase.functions.invoke('reddit-scraper', {
-            body: {
-                keywords: topics,
-                subreddits: ["Entrepreneur", "smallbusiness", "startups", "SaaS"],
-                timeFilter: "month"
+        // Run all 4 scrapers in parallel
+        const [redditRes, linkedinRes, xRes, ytRes] = await Promise.allSettled([
+            supabase.functions.invoke('reddit-scraper', {
+                body: { keywords: topics, subreddits: ["Entrepreneur", "smallbusiness", "startups", "SaaS"], timeFilter: "month" }
+            }),
+            supabase.functions.invoke('linkedin-scraper', {
+                body: { topicKeywords: topics, scraperType: 'posts' }
+            }),
+            supabase.functions.invoke('x-scraper', {
+                body: { keywords: topics, maxItems: 10 }
+            }),
+            supabase.functions.invoke('youtube-shorts-scraper', {
+                body: { keywords: topics, maxResults: 5 }
+            })
+        ]);
+
+        console.log("Scraping results:", { redditRes, linkedinRes, xRes, ytRes });
+
+        let allPosts = [];
+
+        // Helper to normalize and add to allPosts
+        const addPosts = (res, source, postMapper) => {
+            if (res.status === 'fulfilled' && res.value.data && !res.value.error) {
+                const posts = Array.isArray(res.value.data) ? res.value.data : [];
+                allPosts = allPosts.concat(posts.map(p => postMapper(p, source)));
+            } else {
+                console.warn(`${source} scraper failed or returned no data:`, res.reason || res.value?.error);
             }
-        });
+        };
 
-        if (error) throw error;
+        // Reddit Mapper
+        addPosts(redditRes, 'Reddit', (p) => ({
+            title: p.title || "Untitled Reddit Post",
+            desc: (p.selftext || p.body || "No content").substring(0, 200) + "...",
+            engagement: (p.score || p.ups || 0) + (p.numComments || p.num_comments || 0),
+            source: 'Reddit',
+            tags: [`r/${p.subreddit}`, `${p.score || 0} upvotes`]
+        }));
 
-        console.log("Reddit Scraper Data Received:", data);
+        // LinkedIn Mapper
+        addPosts(linkedinRes, 'LinkedIn', (p) => ({
+            title: p.text?.substring(0, 60) + "..." || "LinkedIn Post",
+            desc: (p.text || "No content").substring(0, 200) + "...",
+            engagement: (p.numLikes || 0) + (p.numComments || 0) + (p.numReposts || 0),
+            source: 'LinkedIn',
+            tags: ['LinkedIn', `${p.numLikes || 0} likes`]
+        }));
 
-        // Transform Apify results into our trend format
-        // Group by topic/keyword, pick top posts by upvotes
-        if (Array.isArray(data) && data.length > 0) {
-            // Sort by score (upvotes) descending and take top 5
-            const sorted = data
-                .filter(post => post.title)
-                .sort((a, b) => (b.score || b.ups || 0) - (a.score || a.ups || 0))
-                .slice(0, 5);
+        // X Mapper
+        addPosts(xRes, 'X', (p) => ({
+            title: p.text?.substring(0, 60) + "..." || "X Post",
+            desc: (p.text || "No content").substring(0, 200) + "...",
+            engagement: (p.likeCount || 0) + (p.retweetCount || 0) + (p.replyCount || 0),
+            source: 'X',
+            tags: ['X', `${p.likeCount || 0} likes`]
+        }));
 
-            fetchedTrends = sorted.map((post, i) => ({
-                rank: i + 1,
-                title: post.title || "Untitled Post",
-                desc: (post.selftext || post.body || "No description available.").substring(0, 200) + "...",
-                tags: [
-                    post.subreddit ? `r/${post.subreddit}` : "Reddit",
-                    `${post.score || post.ups || 0} upvotes`,
-                    `${post.numComments || post.num_comments || 0} comments`
-                ]
-            }));
+        // YT Shorts Mapper
+        addPosts(ytRes, 'YouTube Shorts', (p) => ({
+            title: p.title || "YouTube Short",
+            desc: (p.transcript || p.description || "No transcript available").substring(0, 200) + "...",
+            engagement: p.viewCount || 0, // Using views as proxy for engagement
+            source: 'YouTube Shorts',
+            tags: ['YT Shorts', `${p.viewCount || 0} views`]
+        }));
+
+        if (allPosts.length > 0) {
+            // Sort by engagement descending and take top 5
+            fetchedTrends = allPosts
+                .sort((a, b) => b.engagement - a.engagement)
+                .slice(0, 5)
+                .map((p, i) => ({
+                    rank: i + 1,
+                    title: p.title,
+                    desc: p.desc,
+                    tags: [p.source, ...p.tags]
+                }));
         } else {
-            throw new Error("No results returned from Reddit scraper.");
+            throw new Error("No results returned from any source.");
         }
 
     } catch (err) {
-        console.error("Reddit scraper failed, falling back to mock data:", err.message);
+        console.error("Trend Analysis failed, falling back to mock data:", err.message);
         fetchedTrends = [...mockTrendsData];
     }
 

@@ -404,3 +404,25 @@ entrypoint = "./functions/reddit-scraper/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/reddit-scraper/*.html" ]
+
+[functions.youtube-shorts-scraper]
+enabled = true
+verify_jwt = true
+import_map = "./functions/youtube-shorts-scraper/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/youtube-shorts-scraper/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/youtube-shorts-scraper/*.html" ]
+
+[functions.x-scraper]
+enabled = true
+verify_jwt = true
+import_map = "./functions/x-scraper/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/x-scraper/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/x-scraper/*.html" ]

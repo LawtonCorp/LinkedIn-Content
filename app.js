@@ -60,7 +60,11 @@ const elements = {
     
     // Settings
     btnSaveTopics: document.getElementById('btn-save-topics'),
-    topicsInput: document.getElementById('linkedin-topics-input')
+    topicsInput: document.getElementById('linkedin-topics-input'),
+
+    // Logs
+    logContainer: document.getElementById('log-container'),
+    trendsLog: document.getElementById('trends-log')
 };
 
 // --- CORE UTILS ---
@@ -102,32 +106,44 @@ const app = {
             }
         });
         
-        // Adjust Header Title
-        const titleEl = document.querySelector('#global-header-title h2');
-        const descEl = document.querySelector('#global-header-title p');
-        
-        switch(viewId) {
-            case 'dashboard':
-                titleEl.textContent = "Dashboard Overview";
-                descEl.textContent = "Welcome back. Here is your recent activity and audience metrics.";
-                break;
-            case 'skill1':
-                titleEl.textContent = "Trend Research Engine";
-                descEl.textContent = "Scrape and analyze the hottest debates in AI & Small Business.";
-                break;
-            case 'skill2':
-                titleEl.textContent = "Lead Magnet Generator";
-                descEl.textContent = "Turn raw trends into actionable value for your audience.";
-                break;
-            case 'skill3':
-                titleEl.textContent = "Post Writer & Scheduler";
-                descEl.textContent = "Draft tone-matched posts and enqueue them to Blotato.";
-                break;
-            case 'prompts':
-                titleEl.textContent = "Prompt Library";
-                descEl.textContent = "Manage the system prompts driving your AI agents.";
-                break;
+        // Update Header
+        const headerTitle = document.getElementById('global-header-title');
+        if (headerTitle) {
+            const titles = {
+                'dashboard': '<h2>Dashboard Overview</h2><p>Welcome back. Here is your recent activity and audience metrics.</p>',
+                'skill1': '<h2>Trend Research Engine</h2><p>Scrape and analyze the hottest debates in AI & Small Business.</p>',
+                'skill2': '<h2>Lead Magnet Factory</h2><p>Transform a trending idea into a high-value asset.</p>',
+                'skill3': '<h2>Social Post Writer</h2><p>Draft and schedule posts based on your lead magnets.</p>',
+                'prompts': '<h2>Prompt Library & Settings</h2><p>Manage your AI instructions and scraper preferences.</p>'
+            };
+            headerTitle.innerHTML = titles[viewId] || '';
         }
+    },
+
+    toggleLog: () => {
+        elements.logContainer.classList.toggle('log-collapsed');
+    },
+
+    addLog: (msg, type = 'info') => {
+        if (!elements.trendsLog) return;
+        
+        const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const logItem = document.createElement('div');
+        logItem.className = 'log-item';
+        
+        const typeClass = `log-${type}`;
+        logItem.innerHTML = `
+            <span class="log-time">[${time}]</span>
+            <span class="log-msg ${typeClass}">${msg}</span>
+        `;
+        
+        elements.trendsLog.prepend(logItem); // Newest on top
+        elements.logContainer.style.display = 'block';
+    },
+
+    switchModel: (modelId) => {
+        appState.selectedModel = modelId;
+        console.log(`Model selected: ${modelId}`);
     }
 };
 
@@ -213,28 +229,36 @@ const renderTrends = (trends) => {
 
 elements.btnRunTrends.addEventListener('click', async () => {
     const topics = getLinkedInTopics();
+    
+    // Clear and show log
+    elements.trendsLog.innerHTML = '';
+    app.addLog(`Starting Trend Analysis for: ${topics.join(', ')}`, 'info');
+    
     showLoader(`Deep scraping Reddit, LinkedIn, X, and YouTube Shorts for "${topics.join(', ')}"...`);
 
     try {
-        if (!supabase) throw new Error("Supabase client not initialized.");
+        if (!supabase) {
+            app.addLog("Supabase client not initialized. Using local mock data.", "error");
+            throw new Error("Supabase client not initialized.");
+        }
+
+        app.addLog("Invoking scrapers in parallel...", "info");
 
         // Run all 4 scrapers in parallel
         const [redditRes, linkedinRes, xRes, ytRes] = await Promise.allSettled([
             supabase.functions.invoke('reddit-scraper', {
                 body: { keywords: topics, subreddits: ["Entrepreneur", "smallbusiness", "startups", "SaaS"], timeFilter: "month" }
-            }),
+            }).then(r => { app.addLog("Reddit scraper completed.", "success"); return r; }),
             supabase.functions.invoke('linkedin-scraper', {
                 body: { topicKeywords: topics, scraperType: 'posts' }
-            }),
+            }).then(r => { app.addLog("LinkedIn scraper completed.", "success"); return r; }),
             supabase.functions.invoke('x-scraper', {
                 body: { keywords: topics, maxItems: 10 }
-            }),
+            }).then(r => { app.addLog("X scraper completed.", "success"); return r; }),
             supabase.functions.invoke('youtube-shorts-scraper', {
                 body: { keywords: topics, maxResults: 5 }
-            })
+            }).then(r => { app.addLog("YouTube Shorts scraper completed.", "success"); return r; })
         ]);
-
-        console.log("Scraping results:", { redditRes, linkedinRes, xRes, ytRes });
 
         let allPosts = [];
 
@@ -242,10 +266,11 @@ elements.btnRunTrends.addEventListener('click', async () => {
         const addPosts = (res, source, postMapper) => {
             if (res.status === 'fulfilled' && res.value.data && !res.value.error) {
                 const posts = Array.isArray(res.value.data) ? res.value.data : [];
-                console.log(`✅ ${source} returned ${posts.length} posts.`);
+                app.addLog(`${source}: Received ${posts.length} posts.`, 'success');
                 allPosts = allPosts.concat(posts.map(p => postMapper(p, source)));
             } else {
                 const errorDetail = res.status === 'rejected' ? res.reason : (res.value?.error || 'Unknown error');
+                app.addLog(`${source} failed: ${errorDetail}`, 'error');
                 console.error(`❌ ${source} scraper failed:`, errorDetail);
             }
         };
@@ -303,13 +328,16 @@ elements.btnRunTrends.addEventListener('click', async () => {
                     desc: p.desc,
                     tags: [p.source, ...p.tags]
                 }));
+            app.addLog(`Analysis complete. Aggregated top 5 trending topics.`, 'success');
         } else {
+            app.addLog("No results returned from any source. Falling back.", "error");
             throw new Error("No results returned from any source.");
         }
 
     } catch (err) {
         console.error("Trend Analysis failed, falling back to mock data:", err.message);
         fetchedTrends = [...mockTrendsData];
+        app.addLog("Trend Analysis failed. Displaying simulated results.", "error");
     }
 
     renderTrends(fetchedTrends);

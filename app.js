@@ -242,9 +242,11 @@ elements.btnRunTrends.addEventListener('click', async () => {
         const addPosts = (res, source, postMapper) => {
             if (res.status === 'fulfilled' && res.value.data && !res.value.error) {
                 const posts = Array.isArray(res.value.data) ? res.value.data : [];
+                console.log(`✅ ${source} returned ${posts.length} posts.`);
                 allPosts = allPosts.concat(posts.map(p => postMapper(p, source)));
             } else {
-                console.warn(`${source} scraper failed or returned no data:`, res.reason || res.value?.error);
+                const errorDetail = res.status === 'rejected' ? res.reason : (res.value?.error || 'Unknown error');
+                console.error(`❌ ${source} scraper failed:`, errorDetail);
             }
         };
 

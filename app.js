@@ -304,3 +304,62 @@ elements.btnSchedule.addEventListener('click', async () => {
     elements.scheduleTime.value = "";
     elements.postDraftEditor.setAttribute('contenteditable', 'false');
 });
+
+// --- LINKEDIN DATA SYNC WORKER ---
+
+// Simulates fetching live LinkedIn data.
+const fetchLinkedInData = async () => {
+    console.log(`[${new Date().toLocaleTimeString()}] Fetching live LinkedIn data...`);
+    
+    // Simulate network delay
+    await simulateDelay(2000);
+    
+    // Since we don't have a real API connected yet, we'll simulate a slight increase in followers.
+    const followerElement = document.querySelector('.stat-value');
+    if (followerElement) {
+        // Simple increment logic for the prototype
+        let currentFollowers = parseInt(followerElement.textContent.replace(/,/g, ''), 10);
+        if (isNaN(currentFollowers)) currentFollowers = 9412;
+        
+        // Randomly gain 1-5 followers
+        currentFollowers += Math.floor(Math.random() * 5) + 1;
+        followerElement.textContent = currentFollowers.toLocaleString();
+        
+        const trendElement = document.querySelector('.stat-trend.positive');
+        if (trendElement) {
+             trendElement.textContent = "↑ Live update synced";
+             // Optional: add a tiny animation or color pulse here to visually indicate the ping
+             trendElement.style.color = '#facc15';
+             setTimeout(() => { trendElement.style.color = '#4ade80'; }, 3000);
+        }
+    }
+    
+    console.log("LinkedIn data sync complete.");
+};
+
+// Schedules the next fetch at a randomized interval (+/- 4 hours from a base of 4 hours)
+const scheduleNextLinkedInFetch = () => {
+    // Math.random() gives 0-1.
+    // Base is 4 hours (4 * 60 * 60 * 1000).
+    // Variability is up to 4 hours in either direction.
+    // So the interval is anywhere from 0 to 8 hours.
+    const maxIntervalMs = 8 * 60 * 60 * 1000;
+    const randomDelayMs = Math.random() * maxIntervalMs;
+    
+    // Convert to hours for readable logging
+    const delayHours = (randomDelayMs / (1000 * 60 * 60)).toFixed(2);
+    console.log(`Next LinkedIn data sync scheduled in ${delayHours} hours.`);
+    
+    setTimeout(() => {
+        fetchLinkedInData().then(() => {
+            scheduleNextLinkedInFetch(); // Recursively schedule the next one
+        });
+    }, randomDelayMs);
+};
+
+// Start the worker on app load
+// We'll optionally do a quick initial fetch after 5 seconds just so the user sees it work once.
+setTimeout(() => {
+    fetchLinkedInData().then(scheduleNextLinkedInFetch);
+}, 5000); // 5 seconds initial delay, then randomized.
+

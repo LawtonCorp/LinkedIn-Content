@@ -307,30 +307,64 @@ elements.btnSchedule.addEventListener('click', async () => {
 
 // --- LINKEDIN DATA SYNC WORKER ---
 
-// Simulates fetching live LinkedIn data.
+// Simulates fetching live LinkedIn data via Supabase Edge Function (Apify)
 const fetchLinkedInData = async () => {
-    console.log(`[${new Date().toLocaleTimeString()}] Fetching live LinkedIn data...`);
+    console.log(`[${new Date().toLocaleTimeString()}] Fetching live LinkedIn data from Apify via Edge Function...`);
     
-    // Simulate network delay
-    await simulateDelay(2000);
-    
-    // Since we don't have a real API connected yet, we'll simulate a slight increase in followers.
-    const followerElement = document.querySelector('.stat-value');
-    if (followerElement) {
-        // Simple increment logic for the prototype
-        let currentFollowers = parseInt(followerElement.textContent.replace(/,/g, ''), 10);
-        if (isNaN(currentFollowers)) currentFollowers = 9412;
+    // We update the UI to show we are syncing
+    const trendElement = document.querySelector('.stat-trend.positive');
+    if (trendElement) {
+        trendElement.textContent = "↻ Syncing live data...";
+        trendElement.style.color = '#facc15';
+    }
+
+    try {
+        if (!supabase) throw new Error("Supabase client not initialized.");
+
+        // Call the Edge Function
+        // We pass the target URL (e.g., your profile) and the scraperType
+        const { data, error } = await supabase.functions.invoke('linkedin-scraper', {
+            body: { 
+                targetUrl: 'https://www.linkedin.com/in/YOUR_PROFILE_URL', // Update with target
+                scraperType: 'profile' 
+            }
+        });
+
+        if (error) throw error;
+
+        console.log("Apify Data Received: ", data);
+
+        // Assuming data[0] contains the profile scraping results (e.g. from microworlds actor)
+        // Adjust these mappings based on the exact JSON output of the chosen Apify Actor
+        const followerCount = data?.[0]?.followerCount || data?.[0]?.connectionsCount;
+
+        if (followerCount) {
+             const followerElement = document.querySelector('.stat-value');
+             if (followerElement) {
+                 followerElement.textContent = followerCount.toLocaleString();
+             }
+             if (trendElement) {
+                 trendElement.textContent = "↑ Live update synced";
+                 trendElement.style.color = '#4ade80';
+             }
+        }
         
-        // Randomly gain 1-5 followers
-        currentFollowers += Math.floor(Math.random() * 5) + 1;
-        followerElement.textContent = currentFollowers.toLocaleString();
+    } catch (err) {
+        console.error("Failed to sync LinkedIn data via Edge Function:", err.message);
         
-        const trendElement = document.querySelector('.stat-trend.positive');
-        if (trendElement) {
-             trendElement.textContent = "↑ Live update synced";
-             // Optional: add a tiny animation or color pulse here to visually indicate the ping
-             trendElement.style.color = '#facc15';
-             setTimeout(() => { trendElement.style.color = '#4ade80'; }, 3000);
+        // Fallback for prototype testing if Edge function isn't deployed or configured yet
+        console.warn("Falling back to local simulation...");
+        const followerElement = document.querySelector('.stat-value');
+        if (followerElement) {
+            let currentFollowers = parseInt(followerElement.textContent.replace(/,/g, ''), 10);
+            if (isNaN(currentFollowers)) currentFollowers = 9412;
+            currentFollowers += Math.floor(Math.random() * 5) + 1;
+            followerElement.textContent = currentFollowers.toLocaleString();
+            
+            if (trendElement) {
+                 trendElement.textContent = "↑ Mock update synced";
+                 setTimeout(() => { trendElement.style.color = '#4ade80'; }, 3000);
+            }
         }
     }
     

@@ -2,8 +2,8 @@
 
 // --- SUPABASE CONFIGURATION ---
 // User to provide keys here:
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://ycwxcukxpokuvufmegdp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inljd3hjdWt4cG9rdXZ1Zm1lZ2RwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NzYxNzEsImV4cCI6MjA4OTM1MjE3MX0.vGdz0CLI7265nKZM1FDYTst3iLLASel5-1rJeTEY8pg';
 
 // Initialize Supabase Client
 // We'll mock the integration if keys aren't provided yet

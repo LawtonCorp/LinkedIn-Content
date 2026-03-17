@@ -166,34 +166,21 @@ const getLinkedInTopics = () => {
 };
 
 // --- SKILL 1: TREND RESEARCH ---
+
+// Store the last fetched trends so we can reference them by index
+let fetchedTrends = [];
+
 const mockTrendsData = [
-    {
-        rank: 1,
-        title: "AI Automation is Replacing Junior Devs, Not Agencies",
-        desc: "Massive debate on r/smallbusiness regarding cost-saving vs. quality when using AI tools for basic dev tasks. High friction noted around maintaining code quality.",
-        tags: ["Reddit", "AI Adoption", "High Friction"]
-    },
-    {
-        rank: 2,
-        title: "The Death of Cold Email B2B Lead Gen",
-        desc: "Trending conversation on X about AI-generated spam lowering open rates to near 0%. Small businesses are desperate for authentic outbound strategies.",
-        tags: ["X", "Lead Gen", "Pain Point"]
-    },
-    {
-        rank: 3,
-        title: "Small Biz CRM Overwhelm",
-        desc: "YouTube comments section ablaze on a recent SaaS review video. Founders complaining about complex AI CRMs they don't have time to learn.",
-        tags: ["YouTube", "Software", "Friction"]
-    }
+    { rank: 1, title: "AI Automation is Replacing Junior Devs, Not Agencies", desc: "Massive debate on r/smallbusiness regarding cost-saving vs. quality when using AI tools for basic dev tasks.", tags: ["Reddit", "AI Adoption", "High Friction"] },
+    { rank: 2, title: "The Death of Cold Email B2B Lead Gen", desc: "Trending conversation about AI-generated spam lowering open rates to near 0%. Small businesses are desperate for authentic outbound strategies.", tags: ["Reddit", "Lead Gen", "Pain Point"] },
+    { rank: 3, title: "Small Biz CRM Overwhelm", desc: "Founders complaining about complex AI CRMs they don't have time to learn.", tags: ["Reddit", "Software", "Friction"] }
 ];
 
-elements.btnRunTrends.addEventListener('click', async () => {
-    showLoader(`Agent analyzing Reddit, X, and YouTube streams using ${appState.selectedModel}...`);
-    await simulateDelay(2500); // Mocking API call
+// Render a list of trend items to the DOM
+const renderTrends = (trends) => {
+    elements.trendsResults.innerHTML = '';
     
-    elements.trendsResults.innerHTML = ''; // Clear existing
-    
-    mockTrendsData.forEach((trend, index) => {
+    trends.forEach((trend, index) => {
         const div = document.createElement('div');
         div.className = 'trend-item';
         div.innerHTML = `
@@ -213,11 +200,61 @@ elements.btnRunTrends.addEventListener('click', async () => {
     });
     
     elements.trendsResults.style.display = 'block';
+};
+
+elements.btnRunTrends.addEventListener('click', async () => {
+    const topics = getLinkedInTopics();
+    showLoader(`Scraping Reddit for "${topics.join(', ')}" using Apify...`);
+
+    try {
+        if (!supabase) throw new Error("Supabase client not initialized.");
+
+        const { data, error } = await supabase.functions.invoke('reddit-scraper', {
+            body: {
+                keywords: topics,
+                subreddits: ["Entrepreneur", "smallbusiness", "startups", "SaaS"],
+                timeFilter: "month"
+            }
+        });
+
+        if (error) throw error;
+
+        console.log("Reddit Scraper Data Received:", data);
+
+        // Transform Apify results into our trend format
+        // Group by topic/keyword, pick top posts by upvotes
+        if (Array.isArray(data) && data.length > 0) {
+            // Sort by score (upvotes) descending and take top 5
+            const sorted = data
+                .filter(post => post.title)
+                .sort((a, b) => (b.score || b.ups || 0) - (a.score || a.ups || 0))
+                .slice(0, 5);
+
+            fetchedTrends = sorted.map((post, i) => ({
+                rank: i + 1,
+                title: post.title || "Untitled Post",
+                desc: (post.selftext || post.body || "No description available.").substring(0, 200) + "...",
+                tags: [
+                    post.subreddit ? `r/${post.subreddit}` : "Reddit",
+                    `${post.score || post.ups || 0} upvotes`,
+                    `${post.numComments || post.num_comments || 0} comments`
+                ]
+            }));
+        } else {
+            throw new Error("No results returned from Reddit scraper.");
+        }
+
+    } catch (err) {
+        console.error("Reddit scraper failed, falling back to mock data:", err.message);
+        fetchedTrends = [...mockTrendsData];
+    }
+
+    renderTrends(fetchedTrends);
     hideLoader();
 });
 
 window.selectTrendToMagnet = (index) => {
-    const trend = mockTrendsData[index];
+    const trend = fetchedTrends[index] || mockTrendsData[index];
     appState.selectedTrend = trend;
     elements.topicInput.value = trend.title;
     app.switchView('skill2');

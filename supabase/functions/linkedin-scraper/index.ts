@@ -23,25 +23,18 @@ serve(async (req) => {
     }
 
     // Determine which actor to call based on the scraperType requested by the client
-    let actorId = ""
+    let actorId = "supreme_coder/linkedin-post"
     let inputPayload = {}
 
-    if (scraperType === "profile") {
-      actorId = "microworlds/linkedin-profile-scraper"
+    if (scraperType === "posts") {
       inputPayload = {
-        urls: [targetUrl],
-        // Required for this actor, assumes it's securely stored or passed
-        cookie_li_at: Deno.env.get('LINKEDIN_LI_AT_COOKIE') || "", 
-      }
-    } else if (scraperType === "posts") {
-      actorId = "pratik_dani/linkedin-posts-scraper"
-      inputPayload = {
-        postUrl: targetUrl,
+        urls: [targetUrl], // supreme_coder/linkedin-post usually takes an array of post or profile URLs to scrape posts from
         // Depending on specific actor requirements
-        cookie: Deno.env.get('LINKEDIN_LI_AT_COOKIE') || "",
+        cookieId: Deno.env.get('LINKEDIN_LI_AT_COOKIE') || "",
+        deepScrape: true,
       }
     } else {
-      throw new Error(`Invalid scraperType: ${scraperType}`)
+      throw new Error(`Invalid scraperType: ${scraperType}. Only 'posts' is supported.`)
     }
 
     // Call Apify API to run the actor synchronously (wait for finish)

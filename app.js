@@ -326,7 +326,7 @@ const fetchLinkedInData = async () => {
         const { data, error } = await supabase.functions.invoke('linkedin-scraper', {
             body: { 
                 targetUrl: 'https://www.linkedin.com/in/YOUR_PROFILE_URL', // Update with target
-                scraperType: 'profile' 
+                scraperType: 'posts' 
             }
         });
 
@@ -334,23 +334,37 @@ const fetchLinkedInData = async () => {
 
         console.log("Apify Data Received: ", data);
 
-        // Assuming data[0] contains the profile scraping results (e.g. from microworlds actor)
-        // Adjust these mappings based on the exact JSON output of the chosen Apify Actor
-        const followerCount = data?.[0]?.followerCount || data?.[0]?.connectionsCount;
+        // Assuming data contains an array of posts from supreme_coder/linkedin-post
+        // We'll calculate total engagement from the recent scraped posts
+        let totalEngagement = 0;
+        if (Array.isArray(data)) {
+            data.forEach(post => {
+                totalEngagement += (post.numLikes || 0) + (post.numComments || 0) + (post.numReposts || 0);
+            });
+        }
 
-        if (followerCount) {
-             const followerElement = document.querySelector('.stat-value');
-             if (followerElement) {
-                 followerElement.textContent = followerCount.toLocaleString();
+        // We'll update a hypothetical engagement stat block, 
+        // or just bump the stat-value as a proxy for "Audience Engagement"
+        if (totalEngagement > 0) {
+             const statElement = document.querySelector('.stat-value');
+             if (statElement) {
+                 // For the prototype, we just add the engagement to the main number to show it changing
+                 let currentNum = parseInt(statElement.textContent.replace(/,/g, ''), 10);
+                 statElement.textContent = (currentNum + Math.floor(totalEngagement * 0.1)).toLocaleString();
              }
              if (trendElement) {
-                 trendElement.textContent = "↑ Live update synced";
+                 trendElement.textContent = `↑ ${totalEngagement} new engagements synced`;
+                 trendElement.style.color = '#4ade80';
+             }
+        } else {
+             if (trendElement) {
+                 trendElement.textContent = "↑ Live update synced (No new engagement)";
                  trendElement.style.color = '#4ade80';
              }
         }
         
     } catch (err) {
-        console.error("Failed to sync LinkedIn data via Edge Function:", err.message);
+        console.error("Failed to sync LinkedIn data:", err.message);
         
         // Fallback for prototype testing if Edge function isn't deployed or configured yet
         console.warn("Falling back to local simulation...");

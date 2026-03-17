@@ -18,17 +18,18 @@ serve(async (req) => {
       throw new Error("Missing APIFY_API_TOKEN")
     }
 
-    const actorId = "apidojo~tweet-scraper-v2"
+    // New actor: scraping_solutions/twitter-x-scraper-post-timeline-search-replies-pay-by-result
+    const actorId = "scraping_solutions~twitter-x-scraper-post-timeline-search-replies-pay-by-result"
+    
+    // The input schema for this actor uses searchTerms and maxTweets
     const inputPayload = {
-      searchQueries: keywords,
+      searchTerms: keywords, // array of strings
       maxTweets: maxItems,
-      sort: "Top",
-      onlyImage: false,
-      onlyVideo: false,
-      onlyTwitterBlue: false,
+      includeReplies: false,
+      tweetLanguage: "en",
     }
 
-    console.log("Searching X with keywords:", keywords)
+    console.log("Searching X with new actor using keywords:", keywords)
 
     const runResponse = await fetch(`https://api.apify.com/v2/acts/${actorId}/runs?token=${APIFY_TOKEN}`, {
       method: 'POST',

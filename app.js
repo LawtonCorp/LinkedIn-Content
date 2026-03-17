@@ -267,13 +267,19 @@ elements.btnRunTrends.addEventListener('click', async () => {
         }));
 
         // X Mapper
-        addPosts(xRes, 'X', (p) => ({
-            title: p.text?.substring(0, 60) + "..." || "X Post",
-            desc: (p.text || "No content").substring(0, 200) + "...",
-            engagement: (p.likeCount || 0) + (p.retweetCount || 0) + (p.replyCount || 0),
-            source: 'X',
-            tags: ['X', `${p.likeCount || 0} likes`]
-        }));
+        addPosts(xRes, 'X', (p) => {
+            const text = p.full_text || p.text || "No content";
+            const likes = p.favorite_count || p.likeCount || 0;
+            const retweets = p.retweet_count || p.retweetCount || 0;
+            const replies = p.reply_count || p.replyCount || 0;
+            return {
+                title: text.substring(0, 60) + "...",
+                desc: text.substring(0, 200) + "...",
+                engagement: likes + retweets + replies,
+                source: 'X',
+                tags: ['X', `${likes} likes`]
+            };
+        });
 
         // YT Shorts Mapper
         addPosts(ytRes, 'YouTube Shorts', (p) => ({

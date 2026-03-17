@@ -195,8 +195,17 @@
                  </div>
             </div>
 
-            <!-- View: Prompt Library -->
+            <!-- View: Prompt Library / Settings -->
             <div class="view-panel" id="view-prompts">
+                <div class="card prompt-card" style="margin-bottom: 32px;">
+                    <h3>Scraper Settings</h3>
+                    <p>Define the target keywords for LinkedIn live data extraction.</p>
+                    <div class="form-group flex mt-10">
+                        <input type="text" id="linkedin-topics-input" class="input-styled flex-grow" value="AI, Automation, SaaS" placeholder="Comma-separated topics (e.g., AI, Small Business)">
+                        <button class="btn-primary" id="btn-save-topics">Save Topics</button>
+                    </div>
+                </div>
+
                 <div class="card prompt-card">
                     <h3>System Prompts</h3>
                     <p>Edit the underlying instructions driving the Engine's behavior.</p>

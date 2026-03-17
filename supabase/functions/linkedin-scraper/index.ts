@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { targetUrl, scraperType } = await req.json()
+    const { topicKeywords, scraperType } = await req.json()
     
     // Securely get the tokens from Supabase environment variables
     const APIFY_TOKEN = Deno.env.get('APIFY_API_TOKEN')
@@ -28,7 +28,7 @@ serve(async (req) => {
 
     if (scraperType === "posts") {
       inputPayload = {
-        urls: [targetUrl], // supreme_coder/linkedin-post usually takes an array of post or profile URLs to scrape posts from
+        keywords: topicKeywords || ["AI", "Small Business"], // Use topic keywords passed from UI
         // Depending on specific actor requirements
         cookieId: Deno.env.get('LINKEDIN_LI_AT_COOKIE') || "",
         deepScrape: true,
@@ -38,7 +38,7 @@ serve(async (req) => {
     }
 
     // Call Apify API to run the actor synchronously (wait for finish)
-    const runResponse = await fetch(`https://api.apify.com/v2/acts/${actorId}/runs?token=${APIFY_TOKEN}`, {
+    const runResponse = await fetch(`https://api.apify.com/v2/acts/${actorId.replace('/', '~')}/runs?token=${APIFY_TOKEN}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

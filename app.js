@@ -50,7 +50,11 @@ const elements = {
     toneSelector: document.getElementById('tone-selector'),
     postDraftEditor: document.getElementById('post-draft-editor'),
     btnSchedule: document.getElementById('btn-schedule'),
-    scheduleTime: document.getElementById('schedule-time')
+    scheduleTime: document.getElementById('schedule-time'),
+    
+    // Settings
+    btnSaveTopics: document.getElementById('btn-save-topics'),
+    topicsInput: document.getElementById('linkedin-topics-input')
 };
 
 // --- CORE UTILS ---
@@ -134,6 +138,32 @@ elements.modelSelector.addEventListener('change', (e) => {
     console.log(`Model switched to: ${appState.selectedModel}`);
 });
 
+// --- SETTINGS LOGIC ---
+// Load saved topics on init
+const savedTopics = localStorage.getItem('linkedin_topics');
+if (savedTopics && elements.topicsInput) {
+    elements.topicsInput.value = savedTopics;
+}
+
+if (elements.btnSaveTopics) {
+    elements.btnSaveTopics.addEventListener('click', () => {
+        const topics = elements.topicsInput.value;
+        localStorage.setItem('linkedin_topics', topics);
+        elements.btnSaveTopics.textContent = "Saved!";
+        setTimeout(() => { elements.btnSaveTopics.textContent = "Save Topics"; }, 2000);
+        
+        // Optionally trigger an immediate fetch with the new topics
+        console.log("Topics updated to: ", topics);
+        fetchLinkedInData();
+    });
+}
+
+// Helper to get topics as an array
+const getLinkedInTopics = () => {
+    if (!elements.topicsInput) return ["AI", "Small Business"];
+    const val = elements.topicsInput.value;
+    return val.split(',').map(s => s.trim()).filter(s => s.length > 0);
+};
 
 // --- SKILL 1: TREND RESEARCH ---
 const mockTrendsData = [
@@ -322,10 +352,10 @@ const fetchLinkedInData = async () => {
         if (!supabase) throw new Error("Supabase client not initialized.");
 
         // Call the Edge Function
-        // We pass the target URL (e.g., your profile) and the scraperType
+        // We pass the topicKeywords array and the scraperType
         const { data, error } = await supabase.functions.invoke('linkedin-scraper', {
             body: { 
-                targetUrl: 'https://www.linkedin.com/in/YOUR_PROFILE_URL', // Update with target
+                topicKeywords: getLinkedInTopics(), 
                 scraperType: 'posts' 
             }
         });

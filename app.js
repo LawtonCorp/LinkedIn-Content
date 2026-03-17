@@ -1,4 +1,6 @@
 // Lawton Learns LinkedIn Engine - App State & Logic
+document.addEventListener('DOMContentLoaded', () => {
+try {
 
 // --- SUPABASE CONFIGURATION ---
 // User to provide keys here:
@@ -6,13 +8,17 @@ const SUPABASE_URL = 'https://ycwxcukxpokuvufmegdp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inljd3hjdWt4cG9rdXZ1Zm1lZ2RwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NzYxNzEsImV4cCI6MjA4OTM1MjE3MX0.vGdz0CLI7265nKZM1FDYTst3iLLASel5-1rJeTEY8pg';
 
 // Initialize Supabase Client
-// We'll mock the integration if keys aren't provided yet
+// Wrapped in try/catch so the rest of app.js still works if CDN fails to load
 let supabase = null;
-if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log("Supabase client initialized.");
-} else {
-    console.warn("Supabase keys missing. Running with local mock data.");
+try {
+    if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log("Supabase client initialized.");
+    } else {
+        console.warn("Supabase JS library not loaded. Running with local mock data.");
+    }
+} catch (e) {
+    console.warn("Failed to initialize Supabase client:", e.message);
 }
 
 // --- APP STATE ---
@@ -124,6 +130,9 @@ const app = {
         }
     }
 };
+
+// Make app globally accessible for inline onclick handlers in HTML
+window.app = app;
 
 // Attach Nav Listeners
 elements.navItems.forEach(item => {
@@ -478,3 +487,7 @@ setTimeout(() => {
     fetchLinkedInData().then(scheduleNextLinkedInFetch);
 }, 5000); // 5 seconds initial delay, then randomized.
 
+} catch(e) {
+    console.error('App.js initialization failed:', e);
+}
+}); // end DOMContentLoaded

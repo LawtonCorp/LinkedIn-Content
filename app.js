@@ -341,46 +341,63 @@ elements.btnRunTrends.addEventListener('click', async () => {
         };
 
         // Reddit Mapper
-        addPosts(redditRes, 'Reddit', (p) => ({
-            title: p.title || "Untitled Reddit Post",
-            desc: (p.selftext || p.body || "No content").substring(0, 200) + "...",
-            engagement: (p.score || p.ups || 0) + (p.numComments || p.num_comments || 0),
-            source: 'Reddit',
-            tags: [`r/${p.subreddit}`, `${p.score || 0} upvotes`]
-        }));
+        addPosts(redditRes, 'Reddit', (p) => {
+            const text = p.selftext || p.body || p.description || "No content";
+            const likes = p.score || p.ups || 0;
+            const comments = p.numComments || p.num_comments || 0;
+            return {
+                title: p.title || text.substring(0, 60) + (text.length > 60 ? "..." : ""),
+                desc: text.substring(0, 200) + (text.length > 200 ? "..." : ""),
+                engagement: likes + comments,
+                source: 'Reddit',
+                tags: [`r/${p.subreddit || 'reddit'}`, `${likes} upvotes`]
+            };
+        });
 
         // LinkedIn Mapper
-        addPosts(linkedinRes, 'LinkedIn', (p) => ({
-            title: p.text?.substring(0, 60) + "..." || "LinkedIn Post",
-            desc: (p.text || "No content").substring(0, 200) + "...",
-            engagement: (p.numLikes || 0) + (p.numComments || 0) + (p.numReposts || 0),
-            source: 'LinkedIn',
-            tags: ['LinkedIn', `${p.numLikes || 0} likes`]
-        }));
+        addPosts(linkedinRes, 'LinkedIn', (p) => {
+            const text = p.text || p.description || p.contentText || "LinkedIn Post";
+            return {
+                title: text.substring(0, 60) + (text.length > 60 ? "..." : ""),
+                desc: (text || "No content").substring(0, 200) + (text.length > 200 ? "..." : ""),
+                engagement: (p.numLikes || p.likes || 0) + (p.numComments || p.comments || 0) + (p.numReposts || p.reposts || 0),
+                source: 'LinkedIn',
+                tags: ['LinkedIn', `${p.numLikes || p.likes || 0} likes`]
+            };
+        });
 
         // X Mapper
         addPosts(xRes, 'X', (p) => {
-            const text = p.full_text || p.text || "No content";
-            const likes = p.favorite_count || p.likeCount || 0;
-            const retweets = p.retweet_count || p.retweetCount || 0;
-            const replies = p.reply_count || p.replyCount || 0;
+            // Highly defensive text selection
+            const text = p.full_text || p.text || p.contentText || p.fullText || p.tweetText || p.description || "No content";
+            const likes = p.favorite_count || p.likeCount || p.likes || p.favoriteCount || 0;
+            const retweets = p.retweet_count || p.retweetCount || p.retweets || p.retweetCount || 0;
+            const replies = p.reply_count || p.replyCount || p.replies || p.replyCount || 0;
+            
+            // If the text is just a URL, try to find a better title/desc or use a placeholder
+            let title = text.substring(0, 60);
+            if (title.length >= 60) title += "...";
+            
             return {
-                title: text.substring(0, 60) + "...",
-                desc: text.substring(0, 200) + "...",
-                engagement: likes + retweets + replies,
+                title: title || "X Post",
+                desc: text.substring(0, 200) + (text.length > 200 ? "..." : ""),
+                engagement: parseInt(likes) + parseInt(retweets) + parseInt(replies),
                 source: 'X',
                 tags: ['X', `${likes} likes`]
             };
         });
 
         // YT Shorts Mapper
-        addPosts(ytRes, 'YouTube Shorts', (p) => ({
-            title: p.title || "YouTube Short",
-            desc: (p.transcript || p.description || "No transcript available").substring(0, 200) + "...",
-            engagement: p.viewCount || 0, // Using views as proxy for engagement
-            source: 'YouTube Shorts',
-            tags: ['YT Shorts', `${p.viewCount || 0} views`]
-        }));
+        addPosts(ytRes, 'YouTube Shorts', (p) => {
+            const text = p.transcript || p.description || p.contentText || "No transcript available";
+            return {
+                title: p.title || "YouTube Short",
+                desc: text.substring(0, 200) + (text.length > 200 ? "..." : ""),
+                engagement: p.viewCount || p.views || 0,
+                source: 'YouTube Shorts',
+                tags: ['YT Shorts', `${p.viewCount || p.views || 0} views`]
+            };
+        });
 
         if (allPosts.length > 0) {
             // Sort by engagement descending and take top 5

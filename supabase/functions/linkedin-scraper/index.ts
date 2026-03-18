@@ -67,12 +67,17 @@ serve(async (req) => {
     
     let status = runData.data.status;
     let attempts = 0;
-    while (!["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status) && attempts < 100) {
+    while (!["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status) && attempts < 45) {
         await new Promise(res => setTimeout(res, 2000)); // wait 2s
         const statusRes = await fetch(`https://api.apify.com/v2/actor-runs/${runData.data.id}?token=${APIFY_TOKEN}`);
         const statusData = await statusRes.json();
         status = statusData.data.status;
         attempts++;
+    }
+
+    // If still running after 90s, we'll try to fetch results anyway or report it
+    if (!["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status)) {
+      console.log("LinkedIn Scraper still running, fetching partial results...");
     }
 
     if (status !== "SUCCEEDED") {

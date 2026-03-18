@@ -34,7 +34,7 @@ serve(async (req) => {
       searchCommunities: false,
       sort: "relevance",
       time: timeFilter || "month",
-      maxPostsCount: 20,
+      maxPostsCount: 5, // Reduce count for speed
       proxy: {
         useApifyProxy: true,
       },
@@ -58,10 +58,10 @@ serve(async (req) => {
     const runData = await runResponse.json();
     const defaultDatasetId = runData.data.defaultDatasetId;
 
-    // Poll for completion (max 200 seconds)
+    // Poll for completion (max 90 seconds to stay within Supabase 121s limit)
     let status = runData.data.status;
     let attempts = 0;
-    while (!["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status) && attempts < 100) {
+    while (!["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status) && attempts < 45) {
       await new Promise(res => setTimeout(res, 2000));
       const statusRes = await fetch(`https://api.apify.com/v2/actor-runs/${runData.data.id}?token=${APIFY_TOKEN}`);
       const statusData = await statusRes.json();

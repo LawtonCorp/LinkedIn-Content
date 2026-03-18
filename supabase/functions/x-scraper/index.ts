@@ -26,8 +26,8 @@ serve(async (req) => {
     
     // The input schema for this actor uses Input_Search and max_items
     const inputPayload = {
-      Input_Search: [ (keywords || []).join(' ') ], // Array of strings
-      max_items: maxItems,
+      Input_Search: keywords || ["AI", "Automation", "SaaS"], // Array of strings
+      max_items: 5, // Keep it fast
       includeReplies: false,
     }
 
@@ -48,13 +48,15 @@ serve(async (req) => {
     const runData = await runResponse.json()
     const runId = runData.data.id
 
-    // Wait for run completion
+    // Wait for run completion (max 100 seconds to stay within Supabase 121s limit)
     let status = "RUNNING"
-    while (["RUNNING", "READY"].includes(status)) {
+    let attempts = 0
+    while (["RUNNING", "READY"].includes(status) && attempts < 50) {
       await new Promise(r => setTimeout(r, 2000))
       const res = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`)
       const data = await res.json()
       status = data.data.status
+      attempts++
     }
 
     if (status !== "SUCCEEDED") {

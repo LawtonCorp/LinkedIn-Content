@@ -22,8 +22,8 @@ serve(async (req) => {
     }
 
     // Step 1: Search for YouTube Shorts URLs using a search actor
-    // We'll use apify/youtube-scraper to find the URLs first
-    const searchActorId = "apify~youtube-scraper"
+    // We'll use streamers/youtube-shorts-scraper to find the URLs first
+    const searchActorId = "streamers~youtube-shorts-scraper"
     const searchInput = {
       searchKeywords: (keywords || []).map(kw => `"${kw}"`).join(' '),
       maxResults: maxResults,

@@ -264,20 +264,19 @@ elements.btnRunTrends.addEventListener('click', async () => {
 
         // Helper to normalize and add to allPosts
         const addPosts = (res, source, postMapper) => {
-            if (res.status === 'fulfilled' && res.value.data && !res.value.error) {
-                const posts = Array.isArray(res.value.data) ? res.value.data : [];
+            // New standardized format: always 200 OK, but with { data, error }
+            if (res.status === 'fulfilled' && res.value.data && !res.value.data.error) {
+                const posts = Array.isArray(res.value.data.data) ? res.value.data.data : [];
                 app.addLog(`${source}: Received ${posts.length} posts.`, 'success');
                 allPosts = allPosts.concat(posts.map(p => postMapper(p, source)));
             } else {
                 let errorDetail = "Unknown Error";
                 if (res.status === 'rejected') {
                     errorDetail = res.reason?.message || res.reason;
+                } else if (res.value?.data?.error) {
+                    errorDetail = res.value.data.error;
                 } else if (res.value?.error) {
-                    const err = res.value.error;
-                    // Our standard format is { error: "message" }
-                    if (err.message) errorDetail = err.message;
-                    else if (typeof err === 'string') errorDetail = err;
-                    else errorDetail = JSON.stringify(err);
+                    errorDetail = res.value.error.message || JSON.stringify(res.value.error);
                 }
                 
                 app.addLog(`${source} failed: ${errorDetail}`, 'error');

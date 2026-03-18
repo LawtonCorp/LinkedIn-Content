@@ -69,7 +69,11 @@ serve(async (req) => {
     }
 
     if (status !== "SUCCEEDED") {
-      throw new Error(`Apify run did not succeed. Final status: ${status}`);
+      // Fetch Apify Log for better debugging
+      const logRes = await fetch(`https://api.apify.com/v2/logs/${runData.data.id}?token=${APIFY_TOKEN}`);
+      const logText = await logRes.text();
+      const logExcerpt = logText.slice(-1000); // last 1000 chars
+      throw new Error(`Apify run ${status}. Log: ${logExcerpt}`);
     }
 
     // Fetch the dataset results
@@ -77,14 +81,15 @@ serve(async (req) => {
     const results = await datasetResponse.json();
 
     return new Response(
-      JSON.stringify(results),
+      JSON.stringify({ data: results, error: null }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   } catch (error) {
     console.error("Function error:", error.message)
-    return new Response(JSON.stringify({ error: error.message }), {
+    // Always return 200 but include error info
+    return new Response(JSON.stringify({ data: null, error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status: 200,
     })
   }
 })

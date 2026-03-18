@@ -97,19 +97,27 @@ serve(async (req) => {
       transcriptStatus = data.data.status
     }
 
+    if (transcriptStatus !== "SUCCEEDED") {
+      const logRes = await fetch(`https://api.apify.com/v2/logs/${transcriptRunId}?token=${APIFY_TOKEN}`);
+      const logText = await logRes.text();
+      const logExcerpt = logText.slice(-1000);
+      throw new Error(`Transcript Actor ${transcriptStatus}. Log: ${logExcerpt}`);
+    }
+
     // Get final results
     const finalDatasetRes = await fetch(`https://api.apify.com/v2/actor-runs/${transcriptRunId}/dataset/items?token=${APIFY_TOKEN}`)
     const finalResults = await finalDatasetRes.json()
 
-    return new Response(JSON.stringify(finalResults), {
+    return new Response(JSON.stringify({ data: finalResults, error: null }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
     })
 
   } catch (error) {
     console.error("Function error:", error.message)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ data: null, error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status: 200,
     })
   }
 })

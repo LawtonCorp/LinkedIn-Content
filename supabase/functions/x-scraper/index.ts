@@ -59,21 +59,25 @@ serve(async (req) => {
     }
 
     if (status !== "SUCCEEDED") {
-      throw new Error(`X Scraper failed with status: ${status}`)
+      const logRes = await fetch(`https://api.apify.com/v2/logs/${runId}?token=${APIFY_TOKEN}`);
+      const logText = await logRes.text();
+      const logExcerpt = logText.slice(-1000);
+      throw new Error(`X Scraper failed with status: ${status}. Log: ${logExcerpt}`);
     }
 
-    // Get dataset results
     const datasetRes = await fetch(`https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${APIFY_TOKEN}`)
     const results = await datasetRes.json()
 
-    return new Response(JSON.stringify(results), {
+    return new Response(JSON.stringify({ data: results, error: null }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
     })
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error("Function error:", error.message)
+    return new Response(JSON.stringify({ data: null, error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status: 200,
     })
   }
 })

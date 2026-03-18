@@ -28,6 +28,10 @@ const appState = {
     selectedTrend: null,
     generatedMagnet: null,
     generatedPosts: [],
+    postHistory: [
+        { id: 1, title: "The Death of Cold Email", type: "Contrarian", status: "Live", impressions: 1242, likes: 42, shares: 12, comments: 8, date: "2026-03-16 14:30" },
+        { id: 2, title: "AI Automation for SMBs", type: "Case Study", status: "Live", impressions: 856, likes: 28, shares: 5, comments: 3, date: "2026-03-15 09:15" }
+    ],
     currentPromptTab: 'Trend Analysis',
     systemPrompts: {
         'Trend Analysis': `// System Prompt for Trend Analysis\nYou are an expert market researcher for Lawton Learns.\nYour objective is to analyze the provided data from Reddit, X, YouTube, and TikTok to identify friction points related to small businesses adopting AI.\nRank by severity of the pain point and frequency of discussion...`,
@@ -68,6 +72,11 @@ const elements = {
     btnSaveTopics: document.getElementById('btn-save-topics'),
     topicsInput: document.getElementById('linkedin-topics-input'),
 
+    // Performance Tracker
+    performanceSection: document.getElementById('performance-section'),
+    performanceBody: document.getElementById('post-performance-body'),
+    scheduledCount: document.getElementById('scheduled-count'),
+    
     // Logs
     logContainer: document.getElementById('log-container'),
     trendsLog: document.getElementById('trends-log'),
@@ -155,6 +164,37 @@ const app = {
     switchModel: (modelId) => {
         appState.selectedModel = modelId;
         console.log(`Model selected: ${modelId}`);
+    },
+
+    renderPostPerformance: () => {
+        if (!elements.performanceBody) return;
+        
+        // Show section if we have history
+        if (appState.postHistory.length > 0) {
+            elements.performanceSection.style.display = 'block';
+        }
+
+        elements.performanceBody.innerHTML = '';
+        appState.postHistory.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(post => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="post-meta-cell">
+                    <strong>${post.title}</strong>
+                    <span>${post.type} • ${post.date}</span>
+                </td>
+                <td><span class="status-badge status-${post.status.toLowerCase()}">${post.status}</span></td>
+                <td><strong>${post.impressions.toLocaleString()}</strong></td>
+                <td>${post.likes}</td>
+                <td>${post.shares}</td>
+                <td>${post.comments}</td>
+            `;
+            elements.performanceBody.appendChild(tr);
+        });
+
+        // Update total count
+        if (elements.scheduledCount) {
+            elements.scheduledCount.textContent = appState.postHistory.length;
+        }
     },
 
     switchPromptTab: (tabName) => {
@@ -532,8 +572,23 @@ elements.btnSchedule.addEventListener('click', async () => {
     
     await simulateDelay(1500);
     
-    // Simulate Supabase insert (if client existed, we'd do await supabase.from('posts').insert(...))
+    // Simulate Supabase insert
     console.log("Mock Supabase Insert: Post saved to history.");
+    
+    // Add to app history
+    const newPost = {
+        id: Date.now(),
+        title: elements.postDraftEditor.textContent.substring(0, 40) + "...",
+        type: elements.toneSelector.value.charAt(0).toUpperCase() + elements.toneSelector.value.slice(1),
+        status: "Live",
+        impressions: 0,
+        likes: 0,
+        shares: 0,
+        comments: 0,
+        date: time.replace('T', ' ')
+    };
+    appState.postHistory.push(newPost);
+    app.renderPostPerformance();
     
     alert("Success! Payload sent to Blotato API and saved to your Supabase history.");
     
@@ -554,7 +609,7 @@ const fetchLinkedInData = async () => {
     // We update the UI to show we are syncing
     const trendElement = document.querySelector('.stat-trend.positive');
     if (trendElement) {
-        trendElement.textContent = "↻ Syncing live data...";
+        trendElement.textContent = "↻ Syncing engagement momentum...";
         trendElement.style.color = '#facc15';
     }
 
@@ -611,7 +666,7 @@ const fetchLinkedInData = async () => {
         const followerElement = document.querySelector('.stat-value');
         if (followerElement) {
             let currentFollowers = parseInt(followerElement.textContent.replace(/,/g, ''), 10);
-            if (isNaN(currentFollowers)) currentFollowers = 9412;
+            if (isNaN(currentFollowers)) currentFollowers = 8982;
             currentFollowers += Math.floor(Math.random() * 5) + 1;
             followerElement.textContent = currentFollowers.toLocaleString();
             
@@ -620,8 +675,17 @@ const fetchLinkedInData = async () => {
                  setTimeout(() => { trendElement.style.color = '#4ade80'; }, 3000);
             }
         }
+        // 2. Update stats for our recent post history
+        appState.postHistory.forEach(post => {
+            if (post.status === "Live") {
+                post.impressions += Math.floor(Math.random() * 50) + 10;
+                post.likes += Math.floor(Math.random() * 3);
+                if (Math.random() > 0.8) post.comments += 1;
+                if (Math.random() > 0.9) post.shares += 1;
+            }
+        });
+        app.renderPostPerformance();
     }
-    
     console.log("LinkedIn data sync complete.");
 };
 
@@ -650,6 +714,9 @@ const scheduleNextLinkedInFetch = () => {
 setTimeout(() => {
     fetchLinkedInData().then(scheduleNextLinkedInFetch);
 }, 5000); // 5 seconds initial delay, then randomized.
+
+// Initial Renders
+app.renderPostPerformance();
 
 } catch(e) {
     console.error('App.js initialization failed:', e);

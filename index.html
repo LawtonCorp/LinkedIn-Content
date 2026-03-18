@@ -87,13 +87,38 @@
                     </div>
                     <div class="card stat-card">
                         <span class="stat-label">Current Audience</span>
-                        <h2 class="stat-value">9,412</h2>
-                        <span class="stat-trend positive">↑ 1.2% this week</span>
+                        <h2 class="stat-value">8,982</h2>
+                        <span class="stat-trend positive">↑ Live sync active</span>
                     </div>
                     <div class="card stat-card">
                         <span class="stat-label">Scheduled Posts</span>
-                        <h2 class="stat-value">4</h2>
+                        <h2 class="stat-value" id="scheduled-count">4</h2>
                         <span class="stat-trend neutral">Next in 2 hours</span>
+                    </div>
+
+                    <!-- RECENT PERFORMANCE SECTION -->
+                    <div class="card span-4 performance-card" id="performance-section" style="display: none;">
+                        <div class="card-header">
+                            <h3>Recent Post Performance</h3>
+                            <button class="btn-secondary small" onclick="fetchLinkedInData()">↻ Refresh Stats</button>
+                        </div>
+                        <div class="performance-table-wrapper">
+                            <table class="performance-table">
+                                <thead>
+                                    <tr>
+                                        <th>Post Highlights</th>
+                                        <th>Status</th>
+                                        <th>Impressions</th>
+                                        <th>Likes</th>
+                                        <th>Shares</th>
+                                        <th>Comments</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="post-performance-body">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

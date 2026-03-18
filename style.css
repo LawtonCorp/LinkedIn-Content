@@ -654,3 +654,73 @@ h1, h2, h3, h4, .brand-logo, .nav-item {
     margin-right: 8px;
     color: #94a3b8;
 }
+/* Performance Table */
+.performance-card {
+    margin-top: 32px;
+}
+
+.performance-table-wrapper {
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+.performance-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.performance-table th {
+    text-align: left;
+    padding: 12px 16px;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.performance-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-main);
+}
+
+.performance-table tr:hover td {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.status-live { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+.status-scheduled { background: rgba(250, 204, 21, 0.2); color: #facc15; }
+
+.post-meta-cell {
+    max-width: 300px;
+}
+.post-meta-cell strong {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--color-text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.post-meta-cell span {
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+@keyframes glow {
+    0% { box-shadow: 0 0 5px rgba(250, 204, 21, 0.2); }
+    50% { box-shadow: 0 0 15px rgba(250, 204, 21, 0.4); }
+    100% { box-shadow: 0 0 5px rgba(250, 204, 21, 0.2); }
+}
+.glow-primary {
+    animation: glow 2s infinite;
+}

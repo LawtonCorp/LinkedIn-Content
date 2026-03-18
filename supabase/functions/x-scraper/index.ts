@@ -26,7 +26,7 @@ serve(async (req) => {
     
     // The input schema for this actor uses Input_Search and max_items
     const inputPayload = {
-      Input_Search: (keywords || []).join(' '), // Single search string
+      Input_Search: [ (keywords || []).join(' ') ], // Array of strings
       max_items: maxItems,
       includeReplies: false,
     }

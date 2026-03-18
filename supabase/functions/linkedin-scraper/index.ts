@@ -67,7 +67,7 @@ serve(async (req) => {
     
     let status = runData.data.status;
     let attempts = 0;
-    while (!["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status) && attempts < 30) {
+    while (!["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status) && attempts < 100) {
         await new Promise(res => setTimeout(res, 2000)); // wait 2s
         const statusRes = await fetch(`https://api.apify.com/v2/actor-runs/${runData.data.id}?token=${APIFY_TOKEN}`);
         const statusData = await statusRes.json();

@@ -58,10 +58,10 @@ serve(async (req) => {
     const runData = await runResponse.json();
     const defaultDatasetId = runData.data.defaultDatasetId;
 
-    // Poll for completion (max 60 seconds)
+    // Poll for completion (max 200 seconds)
     let status = runData.data.status;
     let attempts = 0;
-    while (!["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status) && attempts < 30) {
+    while (!["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status) && attempts < 100) {
       await new Promise(res => setTimeout(res, 2000));
       const statusRes = await fetch(`https://api.apify.com/v2/actor-runs/${runData.data.id}?token=${APIFY_TOKEN}`);
       const statusData = await statusRes.json();

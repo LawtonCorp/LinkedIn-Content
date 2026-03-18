@@ -40,9 +40,9 @@ serve(async (req) => {
       },
     }
 
-    console.log("Calling Apify with payload:", JSON.stringify(inputPayload))
+    console.log("Searching Reddit with keywords:", keywords)
 
-    // Call Apify API to run the actor
+    // Start the Apify actor run using the direct 'acts' endpoint
     const runResponse = await fetch(`https://api.apify.com/v2/acts/${actorId}/runs?token=${APIFY_TOKEN}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

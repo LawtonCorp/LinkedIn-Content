@@ -23,7 +23,7 @@ serve(async (req) => {
 
     // Step 1: Search for YouTube Shorts URLs using a keyword-based actor
     // This actor supports searching by keyword without requiring a channel list
-    const searchActorId = "scrapestorm/youtube-search-scraper-by-keyword-all-results-available"
+    const searchActorId = "scrapestorm~youtube-search-scraper-by-keyword-all-results-available"
     const searchInput = {
       searchTerms: keywords || ["AI", "Automation", "SaaS"], // Array of keywords
       maxResults: maxResults,
@@ -31,19 +31,20 @@ serve(async (req) => {
 
     console.log("Searching for Shorts URLs with keywords:", keywords)
 
-    const searchRunResponse = await fetch(`https://api.apify.com/v2/acts/${searchActorId}/runs?token=${APIFY_TOKEN}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    // Start search actor run using the direct 'acts' endpoint for better reliability
+    const runResponse = await fetch(`https://api.apify.com/v2/acts/${searchActorId}/runs?token=${APIFY_TOKEN}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(searchInput),
     })
 
-    if (!searchRunResponse.ok) {
-      const errorText = await searchRunResponse.text()
+    if (!runResponse.ok) {
+      const errorText = await runResponse.text()
       console.error("YT Search Actor failed:", errorText)
-      throw new Error(`Search Actor failed: ${searchRunResponse.status} - ${errorText}`)
+      throw new Error(`Search Actor failed: ${runResponse.status} - ${errorText}`)
     }
 
-    const searchRunData = await searchRunResponse.json()
+    const searchRunData = await runResponse.json()
     const searchRunId = searchRunData.data.id
 
     // Wait for search to complete (simplified polling)

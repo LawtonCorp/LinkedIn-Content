@@ -25,7 +25,7 @@ serve(async (req) => {
     }
 
     // Determine which actor to call based on the scraperType requested by the client
-    let actorId = "supreme_coder/linkedin-post"
+    let actorId = "supreme_coder~linkedin-post"
     let inputPayload = {}
 
     if (scraperType === "posts") {
@@ -43,13 +43,13 @@ serve(async (req) => {
       throw new Error(`Invalid scraperType: ${scraperType}. Only 'posts' is supported.`)
     }
 
-    // Call Apify API to run the actor synchronously (wait for finish)
-    const runResponse = await fetch(`https://api.apify.com/v2/acts/${actorId.replace('/', '~')}/runs?token=${APIFY_TOKEN}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(inputPayload),
+    // Start the Apify actor run using the direct 'acts' endpoint
+    const runResponse = await fetch(`https://api.apify.com/v2/acts/${actorId}/runs?token=${APIFY_TOKEN}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(inputPayload)
     });
 
     if (!runResponse.ok) {

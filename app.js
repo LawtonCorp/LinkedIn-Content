@@ -27,7 +27,13 @@ const appState = {
     selectedModel: 'claude-3-5-sonnet',
     selectedTrend: null,
     generatedMagnet: null,
-    generatedPosts: []
+    generatedPosts: [],
+    currentPromptTab: 'Trend Analysis',
+    systemPrompts: {
+        'Trend Analysis': `// System Prompt for Trend Analysis\nYou are an expert market researcher for Lawton Learns.\nYour objective is to analyze the provided data from Reddit, X, YouTube, and TikTok to identify friction points related to small businesses adopting AI.\nRank by severity of the pain point and frequency of discussion...`,
+        'Lead Magnet': `// System Prompt for Lead Magnet\nYou are a high-converting direct-response copywriter.\nYour goal is to take a trending AI topic and turn it into a high-value lead magnet outline and 3 social media variations...`,
+        'Post Writer': `// System Prompt for Post Writer\nYou are a LinkedIn ghostwriter for high-growth founders.\nConvert raw thoughts or lead magnet outlines into punchy, authoritative LinkedIn posts...`
+    }
 };
 
 
@@ -64,7 +70,12 @@ const elements = {
 
     // Logs
     logContainer: document.getElementById('log-container'),
-    trendsLog: document.getElementById('trends-log')
+    trendsLog: document.getElementById('trends-log'),
+
+    // Prompt Library Tabs
+    promptTabs: document.querySelectorAll('.tab-btn'),
+    promptEditor: document.querySelector('.system-prompt-editor'),
+    btnSavePrompts: document.getElementById('btn-save-prompts')
 };
 
 // --- CORE UTILS ---
@@ -144,6 +155,30 @@ const app = {
     switchModel: (modelId) => {
         appState.selectedModel = modelId;
         console.log(`Model selected: ${modelId}`);
+    },
+
+    switchPromptTab: (tabName) => {
+        // Save current editor content to state before switching
+        if (elements.promptEditor) {
+            appState.systemPrompts[appState.currentPromptTab] = elements.promptEditor.value;
+        }
+
+        // Update State
+        appState.currentPromptTab = tabName;
+
+        // Update UI
+        elements.promptTabs.forEach(tab => {
+            if (tab.textContent.trim() === tabName) {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
+        });
+
+        // Update Editor
+        if (elements.promptEditor) {
+            elements.promptEditor.value = appState.systemPrompts[tabName] || '';
+        }
     }
 };
 
@@ -162,6 +197,27 @@ elements.modelSelector.addEventListener('change', (e) => {
     appState.selectedModel = e.target.value;
     console.log(`Model switched to: ${appState.selectedModel}`);
 });
+
+// Attach Prompt Tab Listeners
+elements.promptTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        app.switchPromptTab(tab.textContent.trim());
+    });
+});
+
+// Attach Prompt Save Listener
+if (elements.btnSavePrompts) {
+    elements.btnSavePrompts.addEventListener('click', () => {
+        // Save current editor content to state
+        if (elements.promptEditor) {
+            appState.systemPrompts[appState.currentPromptTab] = elements.promptEditor.value;
+        }
+        
+        elements.btnSavePrompts.textContent = "Saved!";
+        setTimeout(() => { elements.btnSavePrompts.textContent = "Save Changes"; }, 2000);
+        console.log("System Prompts updated:", appState.systemPrompts);
+    });
+}
 
 // --- SETTINGS LOGIC ---
 // Load saved topics on init

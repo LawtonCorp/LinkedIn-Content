@@ -33,9 +33,10 @@ serve(async (req) => {
 
     console.log("Searching X with new actor using keywords:", keywords)
 
+    // Start the Apify actor run using the direct 'acts' endpoint
     const runResponse = await fetch(`https://api.apify.com/v2/acts/${actorId}/runs?token=${APIFY_TOKEN}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(inputPayload),
     })
 

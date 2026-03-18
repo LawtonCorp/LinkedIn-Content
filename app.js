@@ -35,6 +35,7 @@ const appState = {
     currentPromptTab: 'Trend Analysis',
     systemPrompts: {
         'Trend Analysis': `// System Prompt for Trend Analysis\nYou are an expert market researcher for Lawton Learns.\nYour objective is to analyze the provided data from Reddit, X, YouTube, and TikTok to identify friction points related to small businesses adopting AI.\nRank by severity of the pain point and frequency of discussion...`,
+        'Scraper Summary': `// System Prompt for Scraper Summary\nYou are a world-class intelligence analyst.\nYour goal is to take a raw list of posts from multiple sources (Reddit, X, LinkedIn) and identify the top 5 high-impact trending topics.\nFocus specifically on small business pain points, AI adoption hurdles, and contrarian perspectives.\nOutput the results as a clean JSON array of strings identifying the trend titles.`,
         'Lead Magnet': `// System Prompt for Lead Magnet\nYou are a high-converting direct-response copywriter.\nYour goal is to take a trending AI topic and turn it into a high-value lead magnet outline and 3 social media variations...`,
         'Post Writer': `// System Prompt for Post Writer\nYou are a LinkedIn ghostwriter for high-growth founders.\nConvert raw thoughts or lead magnet outlines into punchy, authoritative LinkedIn posts...`
     }
@@ -450,17 +451,41 @@ elements.btnRunTrends.addEventListener('click', async () => {
         });
 
         if (allPosts.length > 0) {
-            // Sort by engagement descending and take top 5
-            fetchedTrends = allPosts
+            // Sort by engagement descending and take top 20 for AI analysis
+            const topRawPosts = allPosts
                 .sort((a, b) => b.engagement - a.engagement)
-                .slice(0, 5)
-                .map((p, i) => ({
+                .slice(0, 20);
+            
+            app.addLog(`Invoking AI Summarizer to identify deep trends...`, 'info');
+            
+            const { data: summaryData, error: summaryError } = await supabase.functions.invoke('trends-summarizer', {
+                body: { 
+                    systemPrompt: appState.systemPrompts['Scraper Summary'], 
+                    scrapedData: topRawPosts 
+                }
+            });
+
+            if (summaryError) throw summaryError;
+
+            if (Array.isArray(summaryData?.data)) {
+                fetchedTrends = summaryData.data.map((t, i) => ({
+                    rank: i + 1,
+                    title: t.title || "Unknown Trend",
+                    desc: t.desc || "No description available",
+                    tags: Array.isArray(t.tags) ? t.tags : ["Trend"]
+                }));
+            } else {
+                // Fallback to engagement-based top 5 if AI fails to return correct format
+                console.warn("AI Summarizer returned unexpected format, falling back to engagement top 5.");
+                fetchedTrends = topRawPosts.slice(0, 5).map((p, i) => ({
                     rank: i + 1,
                     title: p.title,
                     desc: p.desc,
                     tags: [p.source, ...p.tags]
                 }));
-            app.addLog(`Analysis complete. Aggregated top 5 trending topics.`, 'success');
+            }
+            
+            app.addLog(`Analysis complete. Aggregated top ${fetchedTrends.length} trending topics.`, 'success');
         } else {
             app.addLog("No results returned from any source. Falling back.", "error");
             throw new Error("No results returned from any source.");

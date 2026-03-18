@@ -426,3 +426,14 @@ entrypoint = "./functions/x-scraper/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/x-scraper/*.html" ]
+
+[functions.trends-summarizer]
+enabled = true
+verify_jwt = true
+import_map = "./functions/trends-summarizer/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/trends-summarizer/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/trends-summarizer/*.html" ]

@@ -12,7 +12,10 @@ serve(async (req) => {
 
   try {
     const { keywords, maxItems = 10 } = await req.json()
+    console.log("X Scraper received body:", { keywords, maxItems })
+
     const APIFY_TOKEN = Deno.env.get('APIFY_API_TOKEN')
+    console.log("APIFY_TOKEN present:", !!APIFY_TOKEN, APIFY_TOKEN ? `(Starts with: ${APIFY_TOKEN.substring(0, 4)}...)` : "(MISSING)")
 
     if (!APIFY_TOKEN) {
       throw new Error("Missing APIFY_API_TOKEN")
@@ -38,7 +41,9 @@ serve(async (req) => {
     })
 
     if (!runResponse.ok) {
-      throw new Error(`X Scraper Run failed: ${await runResponse.text()}`)
+      const errorText = await runResponse.text()
+      console.error("X Scraper Apify Run failed:", errorText)
+      throw new Error(`X Scraper Run failed: ${runResponse.status} - ${errorText}`)
     }
 
     const runData = await runResponse.json()

@@ -14,8 +14,10 @@ serve(async (req) => {
 
   try {
     const { keywords, subreddits, timeFilter } = await req.json()
-    
+    console.log("Reddit Scraper received body:", { keywords, subreddits, timeFilter })
+
     const APIFY_TOKEN = Deno.env.get('APIFY_API_TOKEN')
+    console.log("APIFY_TOKEN present:", !!APIFY_TOKEN, APIFY_TOKEN ? `(Starts with: ${APIFY_TOKEN.substring(0, 4)}...)` : "(MISSING)")
     
     if (!APIFY_TOKEN) {
       throw new Error("Missing Apify API token in Edge Function env variables.")
@@ -25,7 +27,7 @@ serve(async (req) => {
 
     // Build input for harshmaur/reddit-scraper-pro
     const inputPayload = {
-      searches: (keywords || ["AI small business"]).map((kw) => ({
+      searches: (keywords || ["AI small business"]).map((kw: string) => ({
         term: kw,
         sort: "relevance",
         time: timeFilter || "month", // last 30 days by default
@@ -37,6 +39,8 @@ serve(async (req) => {
       },
     }
 
+    console.log("Calling Apify with payload:", JSON.stringify(inputPayload))
+
     // Call Apify API to run the actor
     const runResponse = await fetch(`https://api.apify.com/v2/acts/${actorId}/runs?token=${APIFY_TOKEN}`, {
       method: 'POST',
@@ -46,7 +50,8 @@ serve(async (req) => {
 
     if (!runResponse.ok) {
       const errorText = await runResponse.text();
-      throw new Error(`Apify Run failed: ${runResponse.status} ${errorText}`);
+      console.error("Apify Run failed:", errorText)
+      throw new Error(`Apify Run failed: ${runResponse.status} - ${errorText}`);
     }
 
     const runData = await runResponse.json();

@@ -12,7 +12,10 @@ serve(async (req) => {
 
   try {
     const { keywords, maxResults = 5 } = await req.json()
+    console.log("YT Shorts Scraper received body:", { keywords, maxResults })
+
     const APIFY_TOKEN = Deno.env.get('APIFY_API_TOKEN')
+    console.log("APIFY_TOKEN present:", !!APIFY_TOKEN, APIFY_TOKEN ? `(Starts with: ${APIFY_TOKEN.substring(0, 4)}...)` : "(MISSING)")
 
     if (!APIFY_TOKEN) {
       throw new Error("Missing APIFY_API_TOKEN")
@@ -36,7 +39,9 @@ serve(async (req) => {
     })
 
     if (!searchRunResponse.ok) {
-      throw new Error(`Search Actor failed: ${await searchRunResponse.text()}`)
+      const errorText = await searchRunResponse.text()
+      console.error("YT Search Actor failed:", errorText)
+      throw new Error(`Search Actor failed: ${searchRunResponse.status} - ${errorText}`)
     }
 
     const searchRunData = await searchRunResponse.json()

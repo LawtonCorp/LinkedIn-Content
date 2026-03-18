@@ -14,9 +14,11 @@ serve(async (req) => {
 
   try {
     const { topicKeywords, scraperType } = await req.json()
-    
+    console.log("LinkedIn Scraper received body:", { topicKeywords, scraperType })
+
     // Securely get the tokens from Supabase environment variables
     const APIFY_TOKEN = Deno.env.get('APIFY_API_TOKEN')
+    console.log("APIFY_TOKEN present:", !!APIFY_TOKEN, APIFY_TOKEN ? `(Starts with: ${APIFY_TOKEN.substring(0, 4)}...)` : "(MISSING)")
     
     if (!APIFY_TOKEN) {
       throw new Error("Missing Apify API token in Edge Function env variables.")

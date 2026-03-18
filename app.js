@@ -269,7 +269,18 @@ elements.btnRunTrends.addEventListener('click', async () => {
                 app.addLog(`${source}: Received ${posts.length} posts.`, 'success');
                 allPosts = allPosts.concat(posts.map(p => postMapper(p, source)));
             } else {
-                const errorDetail = res.status === 'rejected' ? res.reason : (res.value?.error || 'Unknown error');
+                let errorDetail = "Unknown Error";
+                if (res.status === 'rejected') {
+                    errorDetail = res.reason?.message || res.reason;
+                } else if (res.value?.error) {
+                    // Try to get message from function error body
+                    const err = res.value.error;
+                    errorDetail = err.message || (typeof err === 'string' ? err : JSON.stringify(err));
+                    
+                    // Supabase-js error often has a .context or .body or something if it's an HTTP error
+                    if (err.context && err.context.message) errorDetail = err.context.message;
+                }
+                
                 app.addLog(`${source} failed: ${errorDetail}`, 'error');
                 console.error(`❌ ${source} scraper failed:`, errorDetail);
             }

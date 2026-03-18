@@ -30,7 +30,9 @@ const appState = {
     generatedPosts: [],
     postHistory: [
         { id: 1, title: "The Death of Cold Email", type: "Contrarian", status: "Live", impressions: 1242, likes: 42, shares: 12, comments: 8, date: "2026-03-16 14:30" },
-        { id: 2, title: "AI Automation for SMBs", type: "Case Study", status: "Live", impressions: 856, likes: 28, shares: 5, comments: 3, date: "2026-03-15 09:15" }
+        { id: 2, title: "AI Automation for SMBs", type: "Case Study", status: "Live", impressions: 856, likes: 28, shares: 5, comments: 3, date: "2026-03-15 09:15" },
+        { id: 3, title: "The Rise of Zero-Party Data", type: "Industry Update", status: "Scheduled", impressions: 0, likes: 0, shares: 0, comments: 0, date: "2026-03-18 09:00" },
+        { id: 4, title: "Local SMB Voice Agents", type: "Opportunity", status: "Scheduled", impressions: 0, likes: 0, shares: 0, comments: 0, date: "2026-03-19 14:00" }
     ],
     currentPromptTab: 'Trend Analysis',
     systemPrompts: {
@@ -193,9 +195,23 @@ const app = {
             elements.performanceBody.appendChild(tr);
         });
 
-        // Update total count
+        // Update total count - only count truly "Scheduled" posts for the dashboard card
+        const scheduledPosts = appState.postHistory.filter(p => p.status === "Scheduled");
         if (elements.scheduledCount) {
-            elements.scheduledCount.textContent = appState.postHistory.length;
+            elements.scheduledCount.textContent = scheduledPosts.length;
+        }
+
+        // Update "Next in" trend label
+        const trendLabel = document.querySelector('.stat-card .stat-trend.neutral');
+        if (trendLabel) {
+            if (scheduledPosts.length > 0) {
+                // Find next one (simple mock logic for prototype)
+                trendLabel.textContent = `Next in ${Math.floor(Math.random() * 5) + 1} hours`;
+                trendLabel.style.color = '#82589f';
+            } else {
+                trendLabel.textContent = 'None scheduled';
+                trendLabel.style.color = 'var(--color-text-muted)';
+            }
         }
     },
 
@@ -615,7 +631,7 @@ elements.btnSchedule.addEventListener('click', async () => {
         id: Date.now(),
         title: elements.postDraftEditor.textContent.substring(0, 40) + "...",
         type: elements.toneSelector.value.charAt(0).toUpperCase() + elements.toneSelector.value.slice(1),
-        status: "Live",
+        status: "Scheduled",
         impressions: 0,
         likes: 0,
         shares: 0,

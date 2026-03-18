@@ -24,12 +24,11 @@ serve(async (req) => {
     // New actor: scraping_solutions/twitter-x-scraper-post-timeline-search-replies-pay-by-result
     const actorId = "scraping_solutions~twitter-x-scraper-post-timeline-search-replies-pay-by-result"
     
-    // The input schema for this actor uses searchTerms and maxTweets
+    // The input schema for this actor uses Input_Search and max_items
     const inputPayload = {
-      searchTerms: (keywords || []).join(' '), // Better as a single search string for this actor
-      maxTweets: maxItems,
+      Input_Search: (keywords || []).join(' '), // Single search string
+      max_items: maxItems,
       includeReplies: false,
-      tweetLanguage: "en",
     }
 
     console.log("Searching X with new actor using keywords:", keywords)

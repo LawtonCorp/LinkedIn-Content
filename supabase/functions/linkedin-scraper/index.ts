@@ -29,9 +29,13 @@ serve(async (req) => {
     let inputPayload = {}
 
     if (scraperType === "posts") {
+      // Construction of LinkedIn search URLs for the provided keywords
+      const searchUrls = (topicKeywords || ["AI", "Small Business"]).map((kw: string) => 
+        `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(kw)}`
+      )
+
       inputPayload = {
-        keywords: topicKeywords || ["AI", "Small Business"], // Use topic keywords passed from UI
-        // Depending on specific actor requirements
+        urls: searchUrls,
         cookieId: Deno.env.get('LINKEDIN_LI_AT_COOKIE') || "",
         deepScrape: true,
       }

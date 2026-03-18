@@ -26,14 +26,15 @@ serve(async (req) => {
     const actorId = "harshmaur~reddit-scraper-pro"
 
     // Build input for harshmaur/reddit-scraper-pro
+    // Actor expects searchTerms as an array of strings
     const inputPayload = {
-      searches: (keywords || ["AI small business"]).map((kw: string) => ({
-        query: kw,
-        sort: "relevance",
-        time: timeFilter || "month", // last 30 days by default
-      })),
-      subreddits: subreddits || ["Entrepreneur", "smallbusiness", "startups"],
-      maxItems: 20,
+      searchTerms: keywords || ["AI small business"],
+      searchPosts: true,
+      searchComments: false,
+      searchCommunities: false,
+      sort: "relevance",
+      time: timeFilter || "month",
+      maxPostsCount: 20,
       proxy: {
         useApifyProxy: true,
       },

@@ -71,6 +71,7 @@ const elements = {
     // Settings
     btnSaveTopics: document.getElementById('btn-save-topics'),
     topicsInput: document.getElementById('linkedin-topics-input'),
+    profileUrlInput: document.getElementById('linkedin-profile-url'),
 
     // Performance Tracker
     performanceSection: document.getElementById('performance-section'),
@@ -259,22 +260,27 @@ if (elements.btnSavePrompts) {
     });
 }
 
-// --- SETTINGS LOGIC ---
-// Load saved topics on init
+// Load saved topics and profile URL on init
 const savedTopics = localStorage.getItem('linkedin_topics');
 if (savedTopics && elements.topicsInput) {
     elements.topicsInput.value = savedTopics;
+}
+const savedProfileUrl = localStorage.getItem('linkedin_profile_url');
+if (savedProfileUrl && elements.profileUrlInput) {
+    elements.profileUrlInput.value = savedProfileUrl;
 }
 
 if (elements.btnSaveTopics) {
     elements.btnSaveTopics.addEventListener('click', () => {
         const topics = elements.topicsInput.value;
+        const profileUrl = elements.profileUrlInput.value;
         localStorage.setItem('linkedin_topics', topics);
-        elements.btnSaveTopics.textContent = "Saved!";
-        setTimeout(() => { elements.btnSaveTopics.textContent = "Save Topics"; }, 2000);
+        localStorage.setItem('linkedin_profile_url', profileUrl);
         
-        // Optionally trigger an immediate fetch with the new topics
-        console.log("Topics updated to: ", topics);
+        elements.btnSaveTopics.textContent = "Saved!";
+        setTimeout(() => { elements.btnSaveTopics.textContent = "Save Settings"; }, 2000);
+        
+        console.log("Settings updated:", { topics, profileUrl });
         fetchLinkedInData();
     });
 }
@@ -284,6 +290,10 @@ const getLinkedInTopics = () => {
     if (!elements.topicsInput) return ["AI", "Small Business"];
     const val = elements.topicsInput.value;
     return val.split(',').map(s => s.trim()).filter(s => s.length > 0);
+};
+
+const getLinkedInProfileUrl = () => {
+    return elements.profileUrlInput ? elements.profileUrlInput.value.trim() : "";
 };
 
 // --- SKILL 1: TREND RESEARCH ---
@@ -617,11 +627,12 @@ const fetchLinkedInData = async () => {
         if (!supabase) throw new Error("Supabase client not initialized.");
 
         // Call the Edge Function
-        // We pass the topicKeywords array and the scraperType
+        // We pass the topicKeywords, the profileUrl, and the scraperType
         const { data, error } = await supabase.functions.invoke('linkedin-scraper', {
             body: { 
                 topicKeywords: getLinkedInTopics(), 
-                scraperType: 'posts' 
+                profileUrl: getLinkedInProfileUrl(),
+                scraperType: 'activity' // Changed to activity to get specific post performance
             }
         });
 
@@ -638,25 +649,20 @@ const fetchLinkedInData = async () => {
             });
         }
 
-        // We'll update a hypothetical engagement stat block, 
-        // or just bump the stat-value as a proxy for "Audience Engagement"
-        if (totalEngagement > 0) {
-             const statElement = document.querySelector('.stat-value');
-             if (statElement) {
-                 // For the prototype, we just add the engagement to the main number to show it changing
-                 let currentNum = parseInt(statElement.textContent.replace(/,/g, ''), 10);
-                 statElement.textContent = (currentNum + Math.floor(totalEngagement * 0.1)).toLocaleString();
-             }
-             if (trendElement) {
-                 trendElement.textContent = `↑ ${totalEngagement} new engagements synced`;
-                 trendElement.style.color = '#4ade80';
-             }
-        } else {
-             if (trendElement) {
-                 trendElement.textContent = "↑ Live update synced (No new engagement)";
-                 trendElement.style.color = '#4ade80';
-             }
+        // 2. Update stats for our recent post history with LIVE data if available
+        if (Array.isArray(data)) {
+            // Map real results back to our postHistory
+            data.forEach(realPost => {
+                const existingIndex = appState.postHistory.findIndex(p => p.title.includes(realPost.text?.substring(0, 20)));
+                if (existingIndex !== -1) {
+                    appState.postHistory[existingIndex].likes = realPost.numLikes || 0;
+                    appState.postHistory[existingIndex].comments = realPost.numComments || 0;
+                    appState.postHistory[existingIndex].shares = realPost.numReposts || 0;
+                    // Impressions are private, so we'll stop simulating them or keep them static
+                }
+            });
         }
+        app.renderPostPerformance();
         
     } catch (err) {
         console.error("Failed to sync LinkedIn data:", err.message);
@@ -675,15 +681,7 @@ const fetchLinkedInData = async () => {
                  setTimeout(() => { trendElement.style.color = '#4ade80'; }, 3000);
             }
         }
-        // 2. Update stats for our recent post history
-        appState.postHistory.forEach(post => {
-            if (post.status === "Live") {
-                post.impressions += Math.floor(Math.random() * 50) + 10;
-                post.likes += Math.floor(Math.random() * 3);
-                if (Math.random() > 0.8) post.comments += 1;
-                if (Math.random() > 0.9) post.shares += 1;
-            }
-        });
+        // NO simulated growth here anymore per user request: "only shows live data"
         app.renderPostPerformance();
     }
     console.log("LinkedIn data sync complete.");

@@ -236,9 +236,17 @@
             <div class="view-panel" id="view-prompts">
                 <div class="card prompt-card" style="margin-bottom: 32px;">
                     <h3>Scraper Settings</h3>
-                    <p>Define the target keywords for LinkedIn live data extraction.</p>
-                    <div class="form-group flex mt-10">
-                        <input type="text" id="linkedin-topics-input" class="input-styled flex-grow" value="AI, Automation, SaaS" placeholder="Comma-separated topics (e.g., AI, Small Business)">
+                    <div class="setting-item" style="margin-bottom: 24px;">
+                        <label for="linkedin-profile-url" style="display: block; margin-bottom: 8px; font-weight: 600;">Your LinkedIn Profile URL (for Live Stats)</label>
+                        <input type="text" id="linkedin-profile-url" class="input-styled" placeholder="https://www.linkedin.com/in/yourname/" style="width: 100%;">
+                        <p style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px;">Used to sync real impressions and likes to your dashboard.</p>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="linkedin-topics-input" style="display: block; margin-bottom: 8px; font-weight: 600;">Target Topics (comma separated)</label>
+                        <input type="text" id="linkedin-topics-input" class="input-styled" placeholder="AI, Automation, SaaS" style="width: 100%;">
+                    </div>
+                    <div class="mt-10 right-align">
                         <button class="btn-primary" id="btn-save-topics">Save Topics</button>
                     </div>
                 </div>

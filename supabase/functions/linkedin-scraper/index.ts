@@ -13,8 +13,8 @@ serve(async (req) => {
   }
 
   try {
-    const { topicKeywords, scraperType } = await req.json()
-    console.log("LinkedIn Scraper received body:", { topicKeywords, scraperType })
+    const { topicKeywords, profileUrl, scraperType } = await req.json()
+    console.log("LinkedIn Scraper received body:", { topicKeywords, profileUrl, scraperType })
 
     // Securely get the tokens from Supabase environment variables
     const APIFY_TOKEN = Deno.env.get('APIFY_API_TOKEN')
@@ -28,19 +28,27 @@ serve(async (req) => {
     let actorId = "supreme_coder~linkedin-post"
     let inputPayload = {}
 
-    if (scraperType === "posts") {
-      // Construction of LinkedIn search URLs for the provided keywords
+    if (scraperType === "activity" && profileUrl) {
+        // Fetch recent activities from the specific profile
+        const activityUrl = profileUrl.endsWith('/') ? `${profileUrl}recent-activity/all/` : `${profileUrl}/recent-activity/all/`;
+        inputPayload = {
+            urls: [activityUrl],
+            cookieId: Deno.env.get('LINKEDIN_LI_AT_COOKIE') || "",
+            deepScrape: true,
+            minPostCount: 5
+        };
+    } else if (scraperType === "posts" || scraperType === "activity") {
+      // Fallback to keyword search if no profileUrl or specifically requested
       const searchUrls = (topicKeywords || ["AI", "Small Business"]).map((kw: string) => 
         `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(kw)}`
       )
-
       inputPayload = {
         urls: searchUrls,
         cookieId: Deno.env.get('LINKEDIN_LI_AT_COOKIE') || "",
         deepScrape: true,
       }
     } else {
-      throw new Error(`Invalid scraperType: ${scraperType}. Only 'posts' is supported.`)
+      throw new Error(`Invalid scraperType: ${scraperType}.`)
     }
 
     // Start the Apify actor run using the direct 'acts' endpoint

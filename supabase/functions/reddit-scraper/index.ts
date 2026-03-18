@@ -28,7 +28,7 @@ serve(async (req) => {
     // Build input for harshmaur/reddit-scraper-pro
     const inputPayload = {
       searches: (keywords || ["AI small business"]).map((kw: string) => ({
-        term: kw,
+        query: kw,
         sort: "relevance",
         time: timeFilter || "month", // last 30 days by default
       })),
@@ -81,7 +81,8 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
+    console.error("Function error:", error.message)
+    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })

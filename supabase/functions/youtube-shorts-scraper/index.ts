@@ -25,7 +25,7 @@ serve(async (req) => {
     // We'll use apify/youtube-scraper to find the URLs first
     const searchActorId = "apify~youtube-scraper"
     const searchInput = {
-      searchKeywords: keywords.map(kw => `"${kw}" shorts`).join(' '),
+      searchKeywords: (keywords || []).map(kw => `"${kw}"`).join(' '),
       maxResults: maxResults,
       searchSort: "relevance",
     }
@@ -106,6 +106,7 @@ serve(async (req) => {
     })
 
   } catch (error) {
+    console.error("Function error:", error.message)
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,

@@ -26,7 +26,7 @@ serve(async (req) => {
     
     // The input schema for this actor uses searchTerms and maxTweets
     const inputPayload = {
-      searchTerms: keywords, // array of strings
+      searchTerms: (keywords || []).join(' '), // Better as a single search string for this actor
       maxTweets: maxItems,
       includeReplies: false,
       tweetLanguage: "en",

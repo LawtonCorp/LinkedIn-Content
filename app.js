@@ -273,12 +273,11 @@ elements.btnRunTrends.addEventListener('click', async () => {
                 if (res.status === 'rejected') {
                     errorDetail = res.reason?.message || res.reason;
                 } else if (res.value?.error) {
-                    // Try to get message from function error body
                     const err = res.value.error;
-                    errorDetail = err.message || (typeof err === 'string' ? err : JSON.stringify(err));
-                    
-                    // Supabase-js error often has a .context or .body or something if it's an HTTP error
-                    if (err.context && err.context.message) errorDetail = err.context.message;
+                    // Our standard format is { error: "message" }
+                    if (err.message) errorDetail = err.message;
+                    else if (typeof err === 'string') errorDetail = err;
+                    else errorDetail = JSON.stringify(err);
                 }
                 
                 app.addLog(`${source} failed: ${errorDetail}`, 'error');

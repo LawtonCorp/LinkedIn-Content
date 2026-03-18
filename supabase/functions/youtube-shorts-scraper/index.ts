@@ -21,13 +21,12 @@ serve(async (req) => {
       throw new Error("Missing APIFY_API_TOKEN")
     }
 
-    // Step 1: Search for YouTube Shorts URLs using a search actor
-    // We'll use streamers/youtube-shorts-scraper to find the URLs first
-    const searchActorId = "streamers~youtube-shorts-scraper"
+    // Step 1: Search for YouTube Shorts URLs using a keyword-based actor
+    // This actor supports searching by keyword without requiring a channel list
+    const searchActorId = "scrapestorm/youtube-search-scraper-by-keyword-all-results-available"
     const searchInput = {
-      searchKeywords: (keywords || []).map(kw => `"${kw}"`).join(' '),
+      searchTerms: keywords || ["AI", "Automation", "SaaS"], // Array of keywords
       maxResults: maxResults,
-      searchSort: "relevance",
     }
 
     console.log("Searching for Shorts URLs with keywords:", keywords)

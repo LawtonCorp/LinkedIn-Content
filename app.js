@@ -370,10 +370,10 @@ elements.btnRunTrends.addEventListener('click', async () => {
         // Run all 4 scrapers in parallel
         const [redditRes, linkedinRes, xRes, ytRes] = await Promise.allSettled([
             supabase.functions.invoke('reddit-scraper', {
-                body: { keywords: topics, subreddits: ["Entrepreneur", "smallbusiness", "startups", "SaaS"], timeFilter: "month" }
+                body: { keywords: topics, subreddits: ["Entrepreneur", "smallbusiness", "startups", "SaaS"], timeFilter: "month", maxPostsCount: 5 }
             }).then(r => { app.addLog("Reddit scraper completed.", "success"); return r; }),
             supabase.functions.invoke('linkedin-scraper', {
-                body: { topicKeywords: topics, scraperType: 'posts' }
+                body: { topicKeywords: topics, scraperType: 'posts', maxResults: 10 }
             }).then(r => { app.addLog("LinkedIn scraper completed.", "success"); return r; }),
             supabase.functions.invoke('x-scraper', {
                 body: { keywords: topics, maxItems: 10 }

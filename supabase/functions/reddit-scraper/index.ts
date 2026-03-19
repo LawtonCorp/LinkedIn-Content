@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { keywords, subreddits, timeFilter } = await req.json()
+    const { keywords, subreddits, timeFilter, maxPostsCount = 5 } = await req.json()
     console.log("Reddit Scraper received body:", { keywords, subreddits, timeFilter })
 
     const APIFY_TOKEN = Deno.env.get('APIFY_API_TOKEN')
@@ -34,7 +34,7 @@ serve(async (req) => {
       searchCommunities: false,
       sort: "relevance",
       time: timeFilter || "month",
-      maxPostsCount: 5, // Reduce count for speed
+      maxPostsCount: maxPostsCount,
       proxy: {
         useApifyProxy: true,
       },

@@ -27,7 +27,7 @@ serve(async (req) => {
     // The input schema for this actor uses Input_Search and max_items
     const inputPayload = {
       Input_Search: keywords || ["AI", "Automation", "SaaS"], // Array of strings
-      max_items: 5, // Keep it fast
+      max_items: maxItems, // Use the limit sent from frontend
       includeReplies: false,
     }
 

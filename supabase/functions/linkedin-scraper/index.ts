@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { topicKeywords, profileUrl, scraperType } = await req.json()
+    const { topicKeywords, profileUrl, scraperType, maxResults = 10 } = await req.json()
     console.log("LinkedIn Scraper received body:", { topicKeywords, profileUrl, scraperType })
 
     // Securely get the tokens from Supabase environment variables
@@ -35,7 +35,7 @@ serve(async (req) => {
             urls: [activityUrl],
             cookieId: Deno.env.get('LINKEDIN_LI_AT_COOKIE') || "",
             deepScrape: true,
-            minPostCount: 5
+            minPostCount: maxResults,
         };
     } else if (scraperType === "posts" || scraperType === "activity") {
       // Fallback to keyword search if no profileUrl or specifically requested
@@ -46,6 +46,7 @@ serve(async (req) => {
         urls: searchUrls,
         cookieId: Deno.env.get('LINKEDIN_LI_AT_COOKIE') || "",
         deepScrape: true,
+        maxResults: maxResults,
       }
     } else {
       throw new Error(`Invalid scraperType: ${scraperType}.`)

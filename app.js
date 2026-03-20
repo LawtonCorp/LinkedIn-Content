@@ -412,8 +412,9 @@ const renderWatchedAccounts = () => {
 // Add button handler
 if (elements.btnAddWatchAccount) {
     elements.btnAddWatchAccount.addEventListener('click', async () => {
+        console.log('[WatchAccount] Add button clicked');
         const urlVal = elements.watchAccountInput.value.trim();
-        if (!urlVal) return;
+        if (!urlVal) { console.log('[WatchAccount] Empty input, ignoring'); return; }
 
         // Check for duplicates
         const normalized = urlVal.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
@@ -434,7 +435,9 @@ if (elements.btnAddWatchAccount) {
 
         // Call verification
         try {
+            console.log('[WatchAccount] Calling verifyLinkedInProfile for:', newAccount.url);
             const result = await verifyLinkedInProfile(newAccount.url);
+            console.log('[WatchAccount] Verification result:', result);
             const idx = appState.watchedAccounts.indexOf(newAccount);
             if (idx === -1) return; // was removed while verifying
 

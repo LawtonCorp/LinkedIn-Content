@@ -33,7 +33,7 @@ serve(async (req) => {
         actorId = "supreme_coder~linkedin-profile-scraper"
         inputPayload = {
             urls: [profileUrl],
-            cookie: Deno.env.get('LINKEDIN_LI_AT_COOKIE') || "",
+            cookieId: Deno.env.get('LINKEDIN_LI_AT_COOKIE') || "",
         };
     } else if (scraperType === "activity" && profileUrl) {
         // Fetch recent activities from the specific profile

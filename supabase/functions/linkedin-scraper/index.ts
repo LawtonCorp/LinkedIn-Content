@@ -28,7 +28,14 @@ serve(async (req) => {
     let actorId = "supreme_coder~linkedin-post"
     let inputPayload = {}
 
-    if (scraperType === "activity" && profileUrl) {
+    if (scraperType === "profile" && profileUrl) {
+        // Verify a LinkedIn profile and return profile info (name, headline, etc.)
+        actorId = "supreme_coder~linkedin-profile-scraper"
+        inputPayload = {
+            urls: [profileUrl],
+            cookie: Deno.env.get('LINKEDIN_LI_AT_COOKIE') || "",
+        };
+    } else if (scraperType === "activity" && profileUrl) {
         // Fetch recent activities from the specific profile
         const activityUrl = profileUrl.endsWith('/') ? `${profileUrl}recent-activity/all/` : `${profileUrl}/recent-activity/all/`;
         inputPayload = {

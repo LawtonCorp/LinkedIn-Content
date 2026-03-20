@@ -35,18 +35,18 @@ serve(async (req) => {
             urls: [activityUrl],
             cookieId: Deno.env.get('LINKEDIN_LI_AT_COOKIE') || "",
             deepScrape: true,
-            minPostCount: maxResults,
+            limitPerSource: maxResults,
         };
     } else if (scraperType === "posts" || scraperType === "activity") {
       // Fallback to keyword search if no profileUrl or specifically requested
-      const searchUrls = (topicKeywords || ["AI", "Small Business"]).map((kw: string) => 
+      const searchUrls = (topicKeywords || ["AI", "Small Business"]).map((kw: string) =>
         `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(kw)}`
       )
       inputPayload = {
         urls: searchUrls,
         cookieId: Deno.env.get('LINKEDIN_LI_AT_COOKIE') || "",
         deepScrape: true,
-        maxResults: maxResults,
+        limitPerSource: maxResults,
       }
     } else {
       throw new Error(`Invalid scraperType: ${scraperType}.`)

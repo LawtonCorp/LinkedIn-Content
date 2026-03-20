@@ -670,10 +670,11 @@ const fetchLinkedInData = async () => {
         // Call the Edge Function
         // We pass the topicKeywords, the profileUrl, and the scraperType
         const { data, error } = await supabase.functions.invoke('linkedin-scraper', {
-            body: { 
-                topicKeywords: getLinkedInTopics(), 
+            body: {
+                topicKeywords: getLinkedInTopics(),
                 profileUrl: getLinkedInProfileUrl(),
-                scraperType: 'activity' // Changed to activity to get specific post performance
+                scraperType: 'activity', // Changed to activity to get specific post performance
+                maxResults: 5
             }
         });
 

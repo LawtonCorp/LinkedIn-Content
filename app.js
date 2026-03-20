@@ -34,6 +34,7 @@ const appState = {
         { id: 3, title: "The Rise of Zero-Party Data", type: "Industry Update", status: "Scheduled", impressions: 0, likes: 0, shares: 0, comments: 0, date: "2026-03-18 09:00" },
         { id: 4, title: "Local SMB Voice Agents", type: "Opportunity", status: "Scheduled", impressions: 0, likes: 0, shares: 0, comments: 0, date: "2026-03-19 14:00" }
     ],
+    watchedAccounts: JSON.parse(localStorage.getItem('watched_accounts') || '[]'),
     currentPromptTab: 'Trend Analysis',
     systemPrompts: {
         'Trend Analysis': `// System Prompt for Trend Analysis\nYou are an expert market researcher for Lawton Learns.\nYour objective is to analyze the provided data from Reddit, X, YouTube, and TikTok to identify friction points related to small businesses adopting AI.\nRank by severity of the pain point and frequency of discussion...`,
@@ -75,6 +76,11 @@ const elements = {
     btnSaveTopics: document.getElementById('btn-save-topics'),
     topicsInput: document.getElementById('linkedin-topics-input'),
     profileUrlInput: document.getElementById('linkedin-profile-url'),
+    scraperToggle: document.getElementById('scraper-toggle'),
+    scraperVolume: document.getElementById('scraper-volume'),
+    watchAccountInput: document.getElementById('watch-account-input'),
+    btnAddWatchAccount: document.getElementById('btn-add-watch-account'),
+    watchedAccountsList: document.getElementById('watched-accounts-list'),
 
     // Performance Tracker
     performanceSection: document.getElementById('performance-section'),
@@ -301,6 +307,104 @@ if (elements.btnSaveTopics) {
         fetchLinkedInData();
     });
 }
+
+// --- WATCHED ACCOUNTS ---
+
+const saveWatchedAccounts = () => {
+    localStorage.setItem('watched_accounts', JSON.stringify(appState.watchedAccounts));
+};
+
+const renderWatchedAccounts = () => {
+    if (!elements.watchedAccountsList) return;
+    elements.watchedAccountsList.innerHTML = '';
+
+    appState.watchedAccounts.forEach((account, index) => {
+        const chip = document.createElement('span');
+        const statusClass = account.status === 'verified' ? 'verified' : account.status === 'verifying' ? 'verifying' : 'error';
+        chip.className = `watch-chip ${statusClass}`;
+
+        const displayUrl = account.url.replace(/^https?:\/\/(www\.)?/, '');
+        let label = displayUrl;
+        if (account.name && account.status === 'verified') {
+            label = account.name;
+        }
+
+        const warningIcon = account.status === 'error' ? ' ⚠' : '';
+        const spinnerIcon = account.status === 'verifying' ? ' ↻' : '';
+
+        chip.innerHTML = `${label}${warningIcon}${spinnerIcon} <button class="chip-remove" data-index="${index}">✕</button>`;
+        chip.title = account.status === 'error' ? (account.error || 'Verification failed') : (account.headline || displayUrl);
+
+        elements.watchedAccountsList.appendChild(chip);
+    });
+
+    // Attach remove handlers
+    elements.watchedAccountsList.querySelectorAll('.chip-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const idx = parseInt(e.target.dataset.index, 10);
+            appState.watchedAccounts.splice(idx, 1);
+            saveWatchedAccounts();
+            renderWatchedAccounts();
+        });
+    });
+};
+
+// Add button handler
+if (elements.btnAddWatchAccount) {
+    elements.btnAddWatchAccount.addEventListener('click', async () => {
+        const urlVal = elements.watchAccountInput.value.trim();
+        if (!urlVal) return;
+
+        // Check for duplicates
+        const normalized = urlVal.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+        const isDuplicate = appState.watchedAccounts.some(a =>
+            a.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') === normalized
+        );
+        if (isDuplicate) {
+            elements.watchAccountInput.value = '';
+            return;
+        }
+
+        // Add with verifying state
+        const newAccount = { url: urlVal.startsWith('http') ? urlVal : `https://${urlVal}`, status: 'verifying', name: null, headline: null };
+        appState.watchedAccounts.push(newAccount);
+        saveWatchedAccounts();
+        renderWatchedAccounts();
+        elements.watchAccountInput.value = '';
+
+        // Call verification
+        try {
+            const result = await verifyLinkedInProfile(newAccount.url);
+            const idx = appState.watchedAccounts.indexOf(newAccount);
+            if (idx === -1) return; // was removed while verifying
+
+            if (result.valid) {
+                appState.watchedAccounts[idx].status = 'verified';
+                appState.watchedAccounts[idx].name = result.name;
+                appState.watchedAccounts[idx].headline = result.headline;
+                appState.watchedAccounts[idx].username = result.username;
+                console.log(`Verified account: ${result.name} (${result.username})`);
+            } else {
+                appState.watchedAccounts[idx].status = 'error';
+                appState.watchedAccounts[idx].error = result.error;
+                console.warn(`Failed to verify: ${newAccount.url} - ${result.error}`);
+            }
+            saveWatchedAccounts();
+            renderWatchedAccounts();
+        } catch (err) {
+            const idx = appState.watchedAccounts.indexOf(newAccount);
+            if (idx !== -1) {
+                appState.watchedAccounts[idx].status = 'error';
+                appState.watchedAccounts[idx].error = err.message;
+                saveWatchedAccounts();
+                renderWatchedAccounts();
+            }
+        }
+    });
+}
+
+// Render saved watched accounts on load
+renderWatchedAccounts();
 
 // Helper to get topics as an array
 const getLinkedInTopics = () => {

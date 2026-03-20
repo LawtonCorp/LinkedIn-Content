@@ -724,3 +724,81 @@ h1, h2, h3, h4, .brand-logo, .nav-item {
 .glow-primary {
     animation: glow 2s infinite;
 }
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 26px;
+}
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #4a4a56;
+    border-radius: 26px;
+    transition: 0.3s;
+}
+.toggle-slider::before {
+    content: "";
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #fff;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--color-primary);
+}
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(22px);
+}
+
+/* Watched Account Chips */
+.watch-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-main);
+    transition: 0.2s;
+}
+.watch-chip.verified {
+    border-color: rgba(74, 222, 128, 0.4);
+    background: rgba(74, 222, 128, 0.08);
+}
+.watch-chip.error {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.1);
+}
+.watch-chip.verifying {
+    border-color: var(--color-border-highlight);
+    opacity: 0.7;
+}
+.watch-chip .chip-remove {
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0.6;
+    transition: 0.2s;
+    background: none;
+    border: none;
+    color: inherit;
+    padding: 0;
+    line-height: 1;
+}
+.watch-chip .chip-remove:hover {
+    opacity: 1;
+}

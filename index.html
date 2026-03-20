@@ -235,19 +235,46 @@
             <!-- View: Prompt Library / Settings -->
             <div class="view-panel" id="view-prompts">
                 <div class="card prompt-card" style="margin-bottom: 32px;">
-                    <h3>Scraper Settings</h3>
-                    <div class="setting-item" style="margin-bottom: 24px;">
-                        <label for="linkedin-profile-url" style="display: block; margin-bottom: 8px; font-weight: 600;">Your LinkedIn Profile URL (for Live Stats)</label>
-                        <input type="text" id="linkedin-profile-url" class="input-styled" placeholder="https://www.linkedin.com/in/yourname/" style="width: 100%;">
-                        <p style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px;">Used to sync real impressions and likes to your dashboard.</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+                        <!-- Left Column: Scraper Controls -->
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                                <h3 style="margin: 0;">LinkedIn Scraper</h3>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="scraper-toggle" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span style="font-weight: 600; margin-left: 8px;">Volume:</span>
+                                <input type="number" id="scraper-volume" class="input-styled" value="5" min="1" max="50" style="width: 60px; text-align: center;">
+                            </div>
+
+                            <div class="setting-item" style="margin-bottom: 24px;">
+                                <label for="linkedin-topics-input" style="display: block; margin-bottom: 8px; font-weight: 600;">Target Topics</label>
+                                <input type="text" id="linkedin-topics-input" class="input-styled" placeholder="AI, Automation, SaaS" style="width: 100%;">
+                            </div>
+
+                            <div class="setting-item" style="margin-bottom: 16px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Accounts to Watch</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="text" id="watch-account-input" class="input-styled" placeholder="Enter LinkedIn URL..." style="flex: 1;">
+                                    <button class="btn-primary" id="btn-add-watch-account">Add</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Watched Accounts List -->
+                        <div>
+                            <h3 style="margin-bottom: 16px;">Watched Accounts</h3>
+                            <div id="watched-accounts-list" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                <!-- Account chips rendered here by JS -->
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="setting-item">
-                        <label for="linkedin-topics-input" style="display: block; margin-bottom: 8px; font-weight: 600;">Target Topics (comma separated)</label>
-                        <input type="text" id="linkedin-topics-input" class="input-styled" placeholder="AI, Automation, SaaS" style="width: 100%;">
-                    </div>
+                    <!-- Hidden field to keep profile URL functionality -->
+                    <input type="hidden" id="linkedin-profile-url">
                     <div class="mt-10 right-align">
-                        <button class="btn-primary" id="btn-save-topics">Save Topics</button>
+                        <button class="btn-primary" id="btn-save-topics">Save Settings</button>
                     </div>
                 </div>
 

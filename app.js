@@ -308,6 +308,66 @@ if (elements.btnSaveTopics) {
     });
 }
 
+// --- LINKEDIN PROFILE VERIFICATION ---
+
+// Verifies a LinkedIn profile URL using the supreme_coder/linkedin-profile-scraper actor
+// Returns { valid: true, name, headline, profileUrl } on success, or { valid: false, error } on failure
+const verifyLinkedInProfile = async (profileUrl) => {
+    if (!supabase) throw new Error("Supabase client not initialized.");
+    if (!profileUrl) throw new Error("No profile URL provided.");
+
+    // Normalize the URL
+    let url = profileUrl.trim();
+    if (!url.startsWith('http')) {
+        url = 'https://' + url;
+    }
+    // Ensure it looks like a LinkedIn profile URL
+    if (!url.includes('linkedin.com/in/')) {
+        return { valid: false, error: "Not a valid LinkedIn profile URL. Expected format: linkedin.com/in/username" };
+    }
+
+    console.log(`Verifying LinkedIn profile: ${url}`);
+
+    const { data, error } = await supabase.functions.invoke('linkedin-scraper', {
+        body: {
+            profileUrl: url,
+            scraperType: 'profile'
+        }
+    });
+
+    if (error) {
+        console.error("Profile verification failed:", error);
+        return { valid: false, error: error.message || "Verification request failed." };
+    }
+
+    // The edge function returns { data: [...], error: null }
+    // The profile scraper actor returns an array of profile objects
+    const profiles = data?.data || data;
+    if (Array.isArray(profiles) && profiles.length > 0) {
+        const profile = profiles[0];
+        const name = profile.name || profile.fullName || profile.firstName
+            ? `${profile.firstName || ''} ${profile.lastName || ''}`.trim()
+            : null;
+        const headline = profile.headline || profile.title || null;
+        const username = profile.username || profile.publicIdentifier || url.split('/in/')[1]?.replace(/\/$/, '') || null;
+
+        if (name || username) {
+            return {
+                valid: true,
+                name: name || username,
+                headline: headline,
+                username: username,
+                profileUrl: url
+            };
+        }
+    }
+
+    return { valid: false, error: "Profile not found or returned empty data." };
+};
+
+// Make it accessible globally for UI usage
+window.verifyLinkedInProfile = verifyLinkedInProfile;
+
 // --- WATCHED ACCOUNTS ---
 
 const saveWatchedAccounts = () => {
@@ -754,66 +814,6 @@ elements.btnSchedule.addEventListener('click', async () => {
     elements.scheduleTime.value = "";
     elements.postDraftEditor.setAttribute('contenteditable', 'false');
 });
-
-// --- LINKEDIN PROFILE VERIFICATION ---
-
-// Verifies a LinkedIn profile URL using the supreme_coder/linkedin-profile-scraper actor
-// Returns { valid: true, name, headline, profileUrl } on success, or { valid: false, error } on failure
-const verifyLinkedInProfile = async (profileUrl) => {
-    if (!supabase) throw new Error("Supabase client not initialized.");
-    if (!profileUrl) throw new Error("No profile URL provided.");
-
-    // Normalize the URL
-    let url = profileUrl.trim();
-    if (!url.startsWith('http')) {
-        url = 'https://' + url;
-    }
-    // Ensure it looks like a LinkedIn profile URL
-    if (!url.includes('linkedin.com/in/')) {
-        return { valid: false, error: "Not a valid LinkedIn profile URL. Expected format: linkedin.com/in/username" };
-    }
-
-    console.log(`Verifying LinkedIn profile: ${url}`);
-
-    const { data, error } = await supabase.functions.invoke('linkedin-scraper', {
-        body: {
-            profileUrl: url,
-            scraperType: 'profile'
-        }
-    });
-
-    if (error) {
-        console.error("Profile verification failed:", error);
-        return { valid: false, error: error.message || "Verification request failed." };
-    }
-
-    // The edge function returns { data: [...], error: null }
-    // The profile scraper actor returns an array of profile objects
-    const profiles = data?.data || data;
-    if (Array.isArray(profiles) && profiles.length > 0) {
-        const profile = profiles[0];
-        const name = profile.name || profile.fullName || profile.firstName
-            ? `${profile.firstName || ''} ${profile.lastName || ''}`.trim()
-            : null;
-        const headline = profile.headline || profile.title || null;
-        const username = profile.username || profile.publicIdentifier || url.split('/in/')[1]?.replace(/\/$/, '') || null;
-
-        if (name || username) {
-            return {
-                valid: true,
-                name: name || username,
-                headline: headline,
-                username: username,
-                profileUrl: url
-            };
-        }
-    }
-
-    return { valid: false, error: "Profile not found or returned empty data." };
-};
-
-// Make it accessible globally for UI usage
-window.verifyLinkedInProfile = verifyLinkedInProfile;
 
 // --- LINKEDIN DATA SYNC WORKER ---
 

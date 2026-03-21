@@ -437,3 +437,15 @@ entrypoint = "./functions/trends-summarizer/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/trends-summarizer/*.html" ]
+
+[functions.lead-magnet-generator]
+enabled = true
+verify_jwt = true
+import_map = "./functions/lead-magnet-generator/deno.json"
+entrypoint = "./functions/lead-magnet-generator/index.ts"
+
+[functions.post-writer]
+enabled = true
+verify_jwt = true
+import_map = "./functions/post-writer/deno.json"
+entrypoint = "./functions/post-writer/index.ts"

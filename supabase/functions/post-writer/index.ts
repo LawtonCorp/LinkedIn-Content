@@ -78,17 +78,7 @@ serve(async (req) => {
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 
     if (!OPENAI_API_KEY && !CLAUDE_API_KEY && !GEMINI_API_KEY) {
-      console.warn("No AI API keys found. Returning simulation.")
-      return new Response(
-        JSON.stringify({
-          data: {
-            post: `Here's the thing about ${rawContent.substring(0, 50)}...\n\nMost people get this completely wrong.\n\nThey follow the conventional playbook. They copy what everyone else is doing. And they wonder why they get the same mediocre results.\n\nHere's what actually works:\n\n1. Start with the problem, not the solution\n2. Be specific — vague advice is worthless\n3. Share what you've actually tested, not what sounds good\n\nThe businesses winning right now aren't the ones with the biggest budgets.\n\nThey're the ones willing to do what others won't.\n\n♻️ Repost if this resonates\n💬 Drop your experience in the comments`
-          },
-          error: null,
-          simulated: true
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      )
+      throw new Error("No AI API keys configured. Please set at least one of OPENAI_API_KEY, CLAUDE_API_KEY, or GEMINI_API_KEY in your Supabase project secrets.")
     }
 
     const toneDescriptions: Record<string, string> = {

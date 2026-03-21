@@ -92,22 +92,7 @@ serve(async (req) => {
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 
     if (!OPENAI_API_KEY && !CLAUDE_API_KEY && !GEMINI_API_KEY) {
-      console.warn("No AI API keys found. Returning simulation.")
-      return new Response(
-        JSON.stringify({
-          data: {
-            outline: `<strong>Title:</strong> ${topic} — A Practical Guide<br><br><strong>1. The Problem:</strong> Most businesses struggle with ${topic}.<br><strong>2. The Solution:</strong> A step-by-step framework to leverage this trend.<br><strong>3. The Payoff:</strong> Actionable takeaways your audience can implement today.<br><br><strong>Call to Action:</strong> Want the full breakdown? Link in comments.`,
-            variations: [
-              { type: "Contrarian", content: `Everyone is talking about ${topic}. Most of them are wrong. Here's what they're missing...` },
-              { type: "Pain-First", content: `Struggling with ${topic}? You're not alone. 73% of businesses face this exact problem. Here's what actually works...` },
-              { type: "Results-Led", content: `We applied a simple framework to ${topic} and saw results in 2 weeks. No complex tools. No massive budget. Here's how...` }
-            ]
-          },
-          error: null,
-          simulated: true
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      )
+      throw new Error("No AI API keys configured. Please set at least one of OPENAI_API_KEY, CLAUDE_API_KEY, or GEMINI_API_KEY in your Supabase project secrets.")
     }
 
     const userMessage = `Topic: "${topic}"

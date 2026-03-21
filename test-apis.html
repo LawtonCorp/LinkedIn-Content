@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>API Connection Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #e0e0e0; }
+        .test { margin: 12px 0; padding: 12px; border-radius: 6px; background: #16213e; }
+        .pass { border-left: 4px solid #0f0; }
+        .fail { border-left: 4px solid #f00; }
+        .pending { border-left: 4px solid #ff0; }
+        h1 { color: #fff; }
+        pre { white-space: pre-wrap; font-size: 12px; color: #aaa; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #0f3460; color: #fff; border: none; border-radius: 6px; margin: 10px 5px; }
+        button:hover { background: #1a5276; }
+    </style>
+</head>
+<body>
+    <h1>Supabase Edge Function API Tests</h1>
+    <button onclick="runAllTests()">Run All Tests</button>
+    <button onclick="runTest('supabase')">Test Supabase Connection</button>
+    <button onclick="runTest('lead-magnet')">Test Lead Magnet Generator</button>
+    <button onclick="runTest('post-writer')">Test Post Writer</button>
+    <button onclick="runTest('trends-summarizer')">Test Trends Summarizer</button>
+    <button onclick="runTest('reddit')">Test Reddit Scraper</button>
+    <button onclick="runTest('linkedin')">Test LinkedIn Scraper</button>
+    <button onclick="runTest('x')">Test X Scraper</button>
+    <button onclick="runTest('youtube')">Test YouTube Scraper</button>
+    <div id="results"></div>
+
+<script>
+const SUPABASE_URL = 'https://ycwxcukxpokuvufmegdp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inljd3hjdWt4cG9rdXZ1Zm1lZ2RwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NzYxNzEsImV4cCI6MjA4OTM1MjE3MX0.vGdz0CLI7265nKZM1FDYTst3iLLASel5-1rJeTEY8pg';
+
+let sb = null;
+
+function log(id, status, message, detail) {
+    const el = document.getElementById('results');
+    const div = document.createElement('div');
+    div.className = `test ${status}`;
+    div.id = `test-${id}`;
+    div.innerHTML = `<strong>[${status.toUpperCase()}] ${message}</strong>${detail ? `<pre>${typeof detail === 'string' ? detail : JSON.stringify(detail, null, 2)}</pre>` : ''}`;
+    // Replace existing test result or append
+    const existing = document.getElementById(`test-${id}`);
+    if (existing) existing.replaceWith(div);
+    else el.appendChild(div);
+}
+
+async function testSupabase() {
+    log('supabase', 'pending', 'Testing Supabase connection...');
+    try {
+        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Quick health check - list functions doesn't exist, so just verify client creation
+        if (!sb || !sb.functions) throw new Error('Client created but functions interface missing');
+        log('supabase', 'pass', 'Supabase client initialized successfully');
+        return true;
+    } catch (e) {
+        log('supabase', 'fail', 'Supabase client failed to initialize', e.message);
+        return false;
+    }
+}
+
+async function testEdgeFunction(name, id, body, validateFn) {
+    log(id, 'pending', `Testing ${name}...`);
+    try {
+        if (!sb) {
+            const ok = await testSupabase();
+            if (!ok) { log(id, 'fail', `${name}: Supabase not available`); return; }
+        }
+        const start = Date.now();
+        const { data, error } = await sb.functions.invoke(name, { body });
+        const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+
+        if (error) {
+            log(id, 'fail', `${name} (${elapsed}s): Edge function invocation error`, error.message || JSON.stringify(error));
+            return;
+        }
+
+        if (data && data.error) {
+            log(id, 'fail', `${name} (${elapsed}s): API returned error`, data.error);
+            return;
+        }
+
+        if (validateFn) {
+            const result = validateFn(data);
+            if (result !== true) {
+                log(id, 'fail', `${name} (${elapsed}s): Validation failed — ${result}`, data);
+                return;
+            }
+        }
+
+        log(id, 'pass', `${name} (${elapsed}s): OK`, data);
+    } catch (e) {
+        log(id, 'fail', `${name}: Exception`, e.message);
+    }
+}
+
+async function runTest(which) {
+    if (which === 'supabase') return testSupabase();
+
+    if (which === 'lead-magnet') {
+        return testEdgeFunction('lead-magnet-generator', 'lead-magnet', {
+            systemPrompt: 'You are a high-converting direct-response copywriter. Generate a lead magnet outline and 3 social media variations.',
+            topic: 'AI automation for small businesses'
+        }, (d) => {
+            if (!d || !d.data) return 'Missing data field';
+            if (!d.data.outline) return 'Missing outline';
+            if (!Array.isArray(d.data.variations) || d.data.variations.length === 0) return 'Missing or empty variations array';
+            return true;
+        });
+    }
+
+    if (which === 'post-writer') {
+        return testEdgeFunction('post-writer', 'post-writer', {
+            systemPrompt: 'You are a LinkedIn ghostwriter for high-growth founders.',
+            rawContent: 'AI is making cold email obsolete. Small businesses need to pivot to authentic outreach strategies.',
+            tone: 'contrarian'
+        }, (d) => {
+            if (!d || !d.data) return 'Missing data field';
+            if (!d.data.post || d.data.post.length < 50) return 'Missing or too-short post text';
+            return true;
+        });
+    }
+
+    if (which === 'trends-summarizer') {
+        return testEdgeFunction('trends-summarizer', 'trends-summarizer', {
+            systemPrompt: 'You are an expert market researcher. Identify the top 3-5 trends from the data. Output as JSON array with title, desc, tags.',
+            scrapedData: [
+                { source: 'reddit', title: 'AI replacing junior devs', text: 'Discussion about AI tools replacing entry-level developers.', engagement: 150 },
+                { source: 'linkedin', title: 'Cold email is dead', text: 'AI spam has killed B2B cold email effectiveness.', engagement: 200 },
+                { source: 'x', title: 'Small biz CRM overwhelm', text: 'Founders are overwhelmed by complex AI CRM tools.', engagement: 100 }
+            ]
+        }, (d) => {
+            if (!d || !d.data) return 'Missing data field';
+            if (!Array.isArray(d.data) || d.data.length === 0) return 'Expected non-empty trends array';
+            return true;
+        });
+    }
+
+    if (which === 'reddit') {
+        return testEdgeFunction('reddit-scraper', 'reddit', {
+            keywords: ['AI small business'],
+            subreddits: ['smallbusiness'],
+            timeFilter: 'week',
+            maxPostsCount: 3
+        }, (d) => {
+            if (!d) return 'No response data';
+            if (d.error) return `Error: ${d.error}`;
+            return true;
+        });
+    }
+
+    if (which === 'linkedin') {
+        return testEdgeFunction('linkedin-scraper', 'linkedin', {
+            topicKeywords: ['AI automation'],
+            scraperType: 'posts',
+            maxResults: 3
+        }, (d) => {
+            if (!d) return 'No response data';
+            if (d.error) return `Error: ${d.error}`;
+            return true;
+        });
+    }
+
+    if (which === 'x') {
+        return testEdgeFunction('x-scraper', 'x', {
+            keywords: ['AI small business'],
+            maxItems: 3
+        }, (d) => {
+            if (!d) return 'No response data';
+            if (d.error) return `Error: ${d.error}`;
+            return true;
+        });
+    }
+
+    if (which === 'youtube') {
+        return testEdgeFunction('youtube-shorts-scraper', 'youtube', {
+            keywords: ['AI automation small business'],
+            maxResults: 2
+        }, (d) => {
+            if (!d) return 'No response data';
+            if (d.error) return `Error: ${d.error}`;
+            return true;
+        });
+    }
+}
+
+async function runAllTests() {
+    document.getElementById('results').innerHTML = '';
+    await testSupabase();
+    // Run the AI-powered functions in parallel
+    await Promise.all([
+        runTest('lead-magnet'),
+        runTest('post-writer'),
+        runTest('trends-summarizer'),
+    ]);
+    // Run scrapers in parallel
+    await Promise.all([
+        runTest('reddit'),
+        runTest('linkedin'),
+        runTest('x'),
+        runTest('youtube'),
+    ]);
+}
+</script>
+</body>
+</html>

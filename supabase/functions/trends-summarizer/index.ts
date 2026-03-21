@@ -75,7 +75,12 @@ serve(async (req) => {
     const content = aiData.choices[0].message.content
     
     // Parse the JSON. We expect an array or an object containing an array.
-    let parsed = JSON.parse(content)
+    let parsed
+    try {
+      parsed = JSON.parse(content)
+    } catch {
+      throw new Error(`Failed to parse AI response as JSON: ${content.substring(0, 200)}`)
+    }
     if (!Array.isArray(parsed) && parsed.trends) parsed = parsed.trends
 
     return new Response(

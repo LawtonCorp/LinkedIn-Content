@@ -17,8 +17,6 @@ serve(async (req) => {
     console.log("Reddit Scraper received body:", { keywords, subreddits, timeFilter })
 
     const APIFY_TOKEN = Deno.env.get('APIFY_API_TOKEN')
-    console.log("APIFY_TOKEN present:", !!APIFY_TOKEN, APIFY_TOKEN ? `(Starts with: ${APIFY_TOKEN.substring(0, 4)}...)` : "(MISSING)")
-    
     if (!APIFY_TOKEN) {
       throw new Error("Missing Apify API token in Edge Function env variables.")
     }
@@ -27,7 +25,7 @@ serve(async (req) => {
 
     // Build input for harshmaur/reddit-scraper-pro
     // Actor expects searchTerms as an array of strings
-    const inputPayload = {
+    const inputPayload: Record<string, unknown> = {
       searchTerms: keywords || ["AI small business"],
       searchPosts: true,
       searchComments: false,
@@ -38,6 +36,11 @@ serve(async (req) => {
       proxy: {
         useApifyProxy: true,
       },
+    }
+
+    // Pass subreddits filter to actor if provided
+    if (subreddits && subreddits.length > 0) {
+      inputPayload.subreddits = subreddits
     }
 
     console.log("Searching Reddit with keywords:", keywords)

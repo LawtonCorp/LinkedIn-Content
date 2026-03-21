@@ -15,8 +15,6 @@ serve(async (req) => {
     console.log("YT Shorts Scraper received body:", { keywords, maxResults })
 
     const APIFY_TOKEN = Deno.env.get('APIFY_API_TOKEN')
-    console.log("APIFY_TOKEN present:", !!APIFY_TOKEN, APIFY_TOKEN ? `(Starts with: ${APIFY_TOKEN.substring(0, 4)}...)` : "(MISSING)")
-
     if (!APIFY_TOKEN) {
       throw new Error("Missing APIFY_API_TOKEN")
     }
@@ -47,13 +45,30 @@ serve(async (req) => {
     const searchRunData = await runResponse.json()
     const searchRunId = searchRunData.data.id
 
-    // Wait for search to complete (simplified polling)
+    // Wait for search to complete (max 90s to stay within Supabase 121s limit)
     let searchStatus = "RUNNING"
-    while (searchStatus === "RUNNING") {
+    let searchAttempts = 0
+    while (searchStatus === "RUNNING" && searchAttempts < 45) {
       await new Promise(r => setTimeout(r, 2000))
       const res = await fetch(`https://api.apify.com/v2/actor-runs/${searchRunId}?token=${APIFY_TOKEN}`)
       const data = await res.json()
       searchStatus = data.data.status
+      searchAttempts++
+    }
+
+    if (!["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(searchStatus) && searchStatus !== "RUNNING") {
+      throw new Error(`YT Search Actor ended with unexpected status: ${searchStatus}`)
+    }
+
+    if (searchStatus === "RUNNING") {
+      throw new Error("YT Search Actor timed out after 90s polling")
+    }
+
+    if (searchStatus !== "SUCCEEDED") {
+      const logRes = await fetch(`https://api.apify.com/v2/logs/${searchRunId}?token=${APIFY_TOKEN}`)
+      const logText = await logRes.text()
+      const logExcerpt = logText.slice(-1000)
+      throw new Error(`YT Search Actor ${searchStatus}. Log: ${logExcerpt}`)
     }
 
     // Get search results (URLs)
@@ -64,7 +79,7 @@ serve(async (req) => {
       .filter(url => url && url.includes('shorts/'))
 
     if (shortsUrls.length === 0) {
-      return new Response(JSON.stringify([]), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ data: [], error: null }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     // Step 2: Extract transcripts using the user-requested actor
@@ -88,13 +103,19 @@ serve(async (req) => {
     const transcriptRunData = await transcriptRunResponse.json()
     const transcriptRunId = transcriptRunData.data.id
 
-    // Wait for transcript extraction to complete
+    // Wait for transcript extraction to complete (max 90s)
     let transcriptStatus = "RUNNING"
-    while (transcriptStatus === "RUNNING") {
+    let transcriptAttempts = 0
+    while (transcriptStatus === "RUNNING" && transcriptAttempts < 45) {
       await new Promise(r => setTimeout(r, 2000))
       const res = await fetch(`https://api.apify.com/v2/actor-runs/${transcriptRunId}?token=${APIFY_TOKEN}`)
       const data = await res.json()
       transcriptStatus = data.data.status
+      transcriptAttempts++
+    }
+
+    if (transcriptStatus === "RUNNING") {
+      throw new Error("YT Transcript Actor timed out after 90s polling")
     }
 
     if (transcriptStatus !== "SUCCEEDED") {

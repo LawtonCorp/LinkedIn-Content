@@ -15,8 +15,6 @@ serve(async (req) => {
     console.log("X Scraper received body:", { keywords, maxItems })
 
     const APIFY_TOKEN = Deno.env.get('APIFY_API_TOKEN')
-    console.log("APIFY_TOKEN present:", !!APIFY_TOKEN, APIFY_TOKEN ? `(Starts with: ${APIFY_TOKEN.substring(0, 4)}...)` : "(MISSING)")
-
     if (!APIFY_TOKEN) {
       throw new Error("Missing APIFY_API_TOKEN")
     }
